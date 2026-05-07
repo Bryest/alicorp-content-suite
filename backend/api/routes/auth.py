@@ -1,6 +1,7 @@
 """Auth routes — login + (optionally) demo users."""
 
 from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 
 from ...config import get_settings
 from ..middleware.auth import issue_mock_token
@@ -29,18 +30,17 @@ async def login(request: Request, payload: LoginRequest) -> LoginResponse:
 
 @router.get("/demo-users")
 @limiter.limit("30/minute")
-async def demo_users(request: Request) -> dict:
+async def demo_users(request: Request) -> JSONResponse:
     """
     Surface the 3 demo accounts so evaluators can copy-paste credentials.
     HIDDEN in production+real-mode deployments to avoid broadcasting creds.
     """
     settings = get_settings()
     if settings.environment.lower() == "production" and not settings.supabase_mocked:
-        # Behave like the endpoint doesn't exist in real-prod mode.
         raise HTTPException(status_code=404, detail="Not found")
     from ...infrastructure.supabase_client import DEMO_USERS
 
-    return {
+    return JSONResponse(content={
         "users": [
             {"email": u["email"], "password": u["password"], "role": u["role"]}
             for u in DEMO_USERS.values()
@@ -49,4 +49,4 @@ async def demo_users(request: Request) -> dict:
             "These accounts work in mock mode. With real Supabase Auth, "
             "use the Supabase login flow on the frontend."
         ),
-    }
+    })
