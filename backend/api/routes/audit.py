@@ -1,8 +1,8 @@
 """Approval + multimodal audit routes — Module III."""
-
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi.responses import JSONResponse
 
 from ...application.audit_service import AuditService
 from ...domain.content import InvalidTransitionError
@@ -10,16 +10,15 @@ from ..dependencies import get_audit_service
 from ..middleware.auth import AuthUser
 from ..middleware.rate_limit import limiter
 from ..middleware.rbac import require_roles
-from ..schemas import AuditResponse, TextDecisionRequest, TextDecisionResponse
+from ..schemas import TextDecisionRequest
 
 router = APIRouter(prefix="/api/v1/audit", tags=["audit"])
 
-
 _ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
-_MAX_BYTES = 5 * 1024 * 1024  # 5 MB (tightened from 10 MB)
+_MAX_BYTES = 5 * 1024 * 1024
 
 
-@router.patch("/text/{content_id}", response_model=TextDecisionResponse)
+@router.patch("/text/{content_id}")
 @limiter.limit("20/minute")
 async def decide_text(
     request: Request,
@@ -27,7 +26,7 @@ async def decide_text(
     payload: TextDecisionRequest,
     user: AuthUser = Depends(require_roles("approver_a")),
     svc: AuditService = Depends(get_audit_service),
-) -> TextDecisionResponse:
+) -> JSONResponse:
     try:
         result = await svc.decide_text(
             content_id=content_id,
@@ -39,10 +38,10 @@ async def decide_text(
         raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return TextDecisionResponse(**result)
+    return JSONResponse(content=result)
 
 
-@router.post("/image/{content_id}", response_model=AuditResponse)
+@router.post("/image/{content_id}")
 @limiter.limit("5/minute")
 async def audit_image(
     request: Request,
@@ -50,7 +49,7 @@ async def audit_image(
     image: UploadFile = File(...),
     user: AuthUser = Depends(require_roles("approver_b")),
     svc: AuditService = Depends(get_audit_service),
-) -> AuditResponse:
+) -> JSONResponse:
     if image.content_type not in _ALLOWED_MIME:
         raise HTTPException(
             status_code=415,
@@ -72,4 +71,4 @@ async def audit_image(
         raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return AuditResponse(**result)
+    return JSONResponse(content=result)

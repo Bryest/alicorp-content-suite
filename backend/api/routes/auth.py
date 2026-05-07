@@ -6,35 +6,33 @@ from fastapi.responses import JSONResponse
 from ...config import get_settings
 from ..middleware.auth import issue_mock_token
 from ..middleware.rate_limit import limiter
-from ..schemas import LoginRequest, LoginResponse
+from ..schemas import LoginRequest
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login")
 @limiter.limit("5/minute")
-async def login(request: Request, payload: LoginRequest) -> LoginResponse:
+async def login(request: Request, payload: LoginRequest) -> JSONResponse:
     result = issue_mock_token(payload.email, payload.password)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
-    return LoginResponse(
-        access_token=result["token"],
-        user_id=result["user_id"],
-        email=result["email"],
-        role=result["role"],
-    )
+    return JSONResponse(content={
+        "access_token": result["token"],
+        "token_type": "bearer",
+        "user_id": str(result["user_id"]),
+        "email": result["email"],
+        "role": result["role"],
+    })
 
 
 @router.get("/demo-users")
 @limiter.limit("30/minute")
 async def demo_users(request: Request) -> JSONResponse:
-    """
-    Surface the 3 demo accounts so evaluators can copy-paste credentials.
-    HIDDEN in production+real-mode deployments to avoid broadcasting creds.
-    """
+    """Demo accounts — hidden in production+real-mode."""
     settings = get_settings()
     if settings.environment.lower() == "production" and not settings.supabase_mocked:
         raise HTTPException(status_code=404, detail="Not found")
@@ -45,8 +43,5 @@ async def demo_users(request: Request) -> JSONResponse:
             {"email": u["email"], "password": u["password"], "role": u["role"]}
             for u in DEMO_USERS.values()
         ],
-        "note": (
-            "These accounts work in mock mode. With real Supabase Auth, "
-            "use the Supabase login flow on the frontend."
-        ),
+        "note": "These accounts work in mock mode.",
     })

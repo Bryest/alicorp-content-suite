@@ -1,9 +1,9 @@
 """Content generation + listing routes — Module II + read paths."""
-
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 
 from ...application.content_service import ContentService
 from ...domain.content import ApprovalStatus, ContentType
@@ -11,19 +11,19 @@ from ..dependencies import get_content_service
 from ..middleware.auth import AuthUser, get_current_user
 from ..middleware.rate_limit import limiter
 from ..middleware.rbac import require_roles
-from ..schemas import ContentDetail, GenerateRequest, GenerateResponse
+from ..schemas import GenerateRequest
 
 router = APIRouter(prefix="/api/v1", tags=["content"])
 
 
-@router.post("/generate", response_model=GenerateResponse)
+@router.post("/generate")
 @limiter.limit("5/minute")
 async def generate_content(
     request: Request,
     payload: GenerateRequest,
     user: AuthUser = Depends(require_roles("creator")),
     svc: ContentService = Depends(get_content_service),
-) -> GenerateResponse:
+) -> JSONResponse:
     try:
         ct = ContentType(payload.content_type)
     except ValueError:
@@ -38,10 +38,10 @@ async def generate_content(
         content_type=ct,
         request=payload.request,
     )
-    return GenerateResponse(**result)
+    return JSONResponse(content=result)
 
 
-@router.get("/content", response_model=list[ContentDetail])
+@router.get("/content")
 @limiter.limit("60/minute")
 async def list_content(
     request: Request,
@@ -51,7 +51,7 @@ async def list_content(
     offset: int = Query(0, ge=0),
     user: AuthUser = Depends(get_current_user),
     svc: ContentService = Depends(get_content_service),
-) -> list[ContentDetail]:
+) -> JSONResponse:
     status_enum = None
     if status:
         try:
@@ -66,20 +66,20 @@ async def list_content(
         limit=limit,
         offset=offset,
     )
-    return [ContentDetail(**i) for i in items]
+    return JSONResponse(content=items)
 
 
-@router.get("/content/{content_id}", response_model=ContentDetail)
+@router.get("/content/{content_id}")
 @limiter.limit("60/minute")
 async def get_content(
     request: Request,
     content_id: UUID,
     user: AuthUser = Depends(get_current_user),
     svc: ContentService = Depends(get_content_service),
-) -> ContentDetail:
+) -> JSONResponse:
     item = await svc.get(content_id)
     if item is None:
         raise HTTPException(status_code=404, detail="Content item not found")
     if user.role == "creator" and item["creator_id"] != str(user.user_id):
         raise HTTPException(status_code=403, detail="Forbidden — not the creator of this item")
-    return ContentDetail(**item)
+    return JSONResponse(content=item)
