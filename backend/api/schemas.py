@@ -3,7 +3,6 @@ Pydantic I/O schemas — kept separate from domain entities so the wire
 contract can evolve independently of the domain model.
 """
 
-from __future__ import annotations
 
 from typing import Any, Optional
 from uuid import UUID

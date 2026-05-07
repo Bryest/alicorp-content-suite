@@ -1,5 +1,4 @@
 """Approval + multimodal audit routes — Module III."""
-from __future__ import annotations
 
 from uuid import UUID
 
