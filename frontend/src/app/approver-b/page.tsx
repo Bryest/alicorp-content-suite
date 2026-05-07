@@ -65,7 +65,7 @@ export default function ApproverBPage() {
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
-                  ref={(el) => (inputs.current[i.content_id] = el)}
+                  ref={(el) => { inputs.current[i.content_id] = el; }}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f) uploadFor(i.content_id, f);
