@@ -35,7 +35,7 @@ class Settings:
     groq_model: str = "llama-3.3-70b-versatile"
     google_api_key: str = ""
     gemini_vision_model: str = "gemini-1.5-flash"
-    gemini_embedding_model: str = "models/text-embedding-004"
+    gemini_embedding_model: str = "models/gemini-embedding-001"
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"

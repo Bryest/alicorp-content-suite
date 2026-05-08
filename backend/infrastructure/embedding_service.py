@@ -85,8 +85,12 @@ class EmbeddingService:
                 model=self.settings.gemini_embedding_model,
                 content=text,
                 task_type=task_type,
+                output_dimensionality=EMBEDDING_DIM,
             )
-            return list(result["embedding"])
+            vec = list(result["embedding"])
+            # gemini-embedding-001 requires manual L2-normalization for non-3072 dims
+            n = math.sqrt(sum(x * x for x in vec)) or 1.0
+            return [x / n for x in vec]
         except Exception as e:
             logger.warning(f"EmbeddingService: real call failed, falling back to mock: {e}")
             return _mock_embed(text)
