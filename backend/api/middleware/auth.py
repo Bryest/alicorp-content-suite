@@ -27,6 +27,7 @@ from uuid import UUID
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import PyJWKClient
 
 from ...config import get_settings
 from ...infrastructure.supabase_client import DEMO_USERS
@@ -35,6 +36,17 @@ logger = logging.getLogger(__name__)
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+# Cache PyJWKClient instances per Supabase URL — they internally cache
+# the JWKS response and refresh on signing-key rotation.
+_jwks_cache: dict[str, PyJWKClient] = {}
+
+
+def _jwks_client_for(supabase_url: str) -> PyJWKClient:
+    if supabase_url not in _jwks_cache:
+        url = f"{supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+        _jwks_cache[supabase_url] = PyJWKClient(url)
+    return _jwks_cache[supabase_url]
 
 
 class AuthUser:
@@ -72,15 +84,43 @@ def issue_mock_token(email: str, password: str) -> Optional[dict]:
     }
 
 
+_ASYMMETRIC_ALGS = {"ES256", "ES384", "ES512", "RS256", "RS384", "RS512", "EdDSA"}
+
+
 def _decode(token: str) -> dict:
     settings = get_settings()
-    # We accept both the mock secret and the real Supabase secret.
-    candidates = []
+    last_err: Optional[Exception] = None
+
+    # 1) Sniff the JWT header to pick the right verification path.
+    try:
+        header = jwt.get_unverified_header(token)
+        alg = header.get("alg") or "HS256"
+    except Exception as e:
+        alg = "HS256"
+        last_err = e
+
+    # 2) Asymmetric tokens (modern Supabase = ES256 by default) verified via JWKS.
+    if alg in _ASYMMETRIC_ALGS and settings.supabase_url:
+        try:
+            jwks = _jwks_client_for(settings.supabase_url)
+            signing_key = jwks.get_signing_key_from_jwt(token).key
+            return jwt.decode(
+                token,
+                signing_key,
+                algorithms=[alg],
+                options={"verify_aud": False},
+            )
+        except Exception as e:
+            last_err = e
+            logger.warning(f"JWKS verify failed (alg={alg}): {e}")
+
+    # 3) Symmetric tokens — mock JWTs and Supabase legacy HS256 (if anyone
+    # ever rotates back). We try Supabase legacy secret first, then mock.
+    candidates: list[str] = []
     if settings.supabase_jwt_secret:
         candidates.append(settings.supabase_jwt_secret)
     candidates.append(settings.mock_jwt_secret)
 
-    last_err: Optional[Exception] = None
     for secret in candidates:
         try:
             return jwt.decode(
@@ -92,6 +132,7 @@ def _decode(token: str) -> dict:
         except Exception as e:
             last_err = e
             continue
+
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail=f"Invalid or expired token ({last_err})",
