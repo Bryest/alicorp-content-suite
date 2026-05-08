@@ -30,6 +30,7 @@ def _csv(value: str) -> List[str]:
 class Settings:
     supabase_url: str = ""
     supabase_service_role_key: str = ""
+    supabase_anon_key: str = ""
     supabase_jwt_secret: str = ""
     groq_api_key: str = ""
     groq_model: str = "llama-3.3-70b-versatile"
@@ -83,6 +84,7 @@ def get_settings() -> Settings:
     s = Settings(
         supabase_url=_env("SUPABASE_URL"),
         supabase_service_role_key=_env("SUPABASE_SERVICE_ROLE_KEY"),
+        supabase_anon_key=_env("SUPABASE_ANON_KEY"),
         supabase_jwt_secret=_env("SUPABASE_JWT_SECRET"),
         groq_api_key=_env("GROQ_API_KEY"),
         groq_model=_env("GROQ_MODEL") or Settings.groq_model,

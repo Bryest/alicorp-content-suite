@@ -115,8 +115,11 @@ async def get_current_user(
         )
     role = payload.get("role")
     email = payload.get("email", "")
-    # Real Supabase tokens won't carry role; fall back to lookup.
-    if not role:
+    # Supabase JWTs carry role="authenticated" by default — that's not one of
+    # our app roles. Treat it (and any non-app value) as missing and look up
+    # the real role in user_roles.
+    APP_ROLES = {"creator", "approver_a", "approver_b"}
+    if role not in APP_ROLES:
         role = _resolve_role_for_user(sub, email)
     try:
         user_id = UUID(sub)
