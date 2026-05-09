@@ -44,13 +44,13 @@ export default function LoginPage() {
         </div>
         <h1 className="text-3xl font-bold mt-2">Content Suite</h1>
         <p className="muted text-sm mt-2">
-          Brand-aware content generation with RAG + multimodal audit
+          Generación de contenido alineada a marca con RAG y validación multimodal
         </p>
       </div>
 
       <form onSubmit={handleLogin} className="card space-y-4">
         <div>
-          <label className="text-xs uppercase tracking-wide muted">Email</label>
+          <label className="text-xs uppercase tracking-wide muted">Correo</label>
           <input
             className="input mt-1"
             type="email"
@@ -60,7 +60,7 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <label className="text-xs uppercase tracking-wide muted">Password</label>
+          <label className="text-xs uppercase tracking-wide muted">Contraseña</label>
           <input
             className="input mt-1"
             type="password"
@@ -71,13 +71,13 @@ export default function LoginPage() {
         </div>
         {err && <div className="text-red-400 text-sm">{err}</div>}
         <button className="btn btn-primary w-full justify-center" disabled={busy} type="submit">
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? "Iniciando sesión…" : "Iniciar sesión"}
         </button>
       </form>
 
       {demoUsers.length > 0 && (
         <div className="mt-6 card">
-          <div className="text-xs uppercase tracking-wide muted mb-3">Demo accounts</div>
+          <div className="text-xs uppercase tracking-wide muted mb-3">Cuentas de prueba</div>
           <div className="space-y-2">
             {demoUsers.map((u) => (
               <button
@@ -92,16 +92,10 @@ export default function LoginPage() {
                   <div className="text-sm">{u.email}</div>
                   <div className="text-xs muted">{u.role}</div>
                 </div>
-                <div className="text-xs muted">tap to fill</div>
+                <div className="text-xs muted">click para autorrellenar</div>
               </button>
             ))}
           </div>
-        </div>
-      )}
-
-      {mockMode && (
-        <div className="mt-4 text-center text-xs muted">
-          Mode: {Object.entries(mockMode).map(([k, v]) => `${k}:${v ? "mock" : "real"}`).join(" · ")}
         </div>
       )}
     </main>

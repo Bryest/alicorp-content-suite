@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api, auth } from "@/lib/api";
+import { api, auth, humanSection } from "@/lib/api";
 import Header from "@/components/Header";
 import StatusBadge from "@/components/StatusBadge";
 import ConflictAlert from "@/components/ConflictAlert";
+import Toast from "@/components/Toast";
 
 type Brand = { brand_id: string; name: string; product_type: string; created_at: string };
 type Generation = {
@@ -35,7 +36,7 @@ export default function CreatorPage() {
 
   return (
     <main className="max-w-5xl mx-auto px-6 py-8">
-      <Header title="Creator workspace" />
+      <Header title="Espacio del Creador" />
 
       <div className="flex gap-2 mb-5">
         {(["brand", "generate", "history"] as const).map((t) => (
@@ -44,7 +45,7 @@ export default function CreatorPage() {
             onClick={() => setTab(t)}
             className={`btn ${tab === t ? "btn-primary" : "btn-secondary"}`}
           >
-            {t === "brand" ? "1 · Brand DNA" : t === "generate" ? "2 · Generate" : "3 · History"}
+            {t === "brand" ? "1 · Define tu marca" : t === "generate" ? "2 · Crear contenido" : "3 · Mis publicaciones"}
           </button>
         ))}
       </div>
@@ -65,17 +66,18 @@ export default function CreatorPage() {
 
 function BrandDNAForm({ onCreated }: { onCreated: () => void }) {
   const [form, setForm] = useState({
-    name: "QuinoaSnack Pro",
-    product_type: "Healthy snack with quinoa",
-    tone: "Fun but professional",
-    audience: "Gen Z, health-conscious, ages 18-26",
-    visual_rules: "Lime green dominant, white background, logo minimum 80px",
-    forbidden_words: "cheap, diet, artificial",
-    key_messages: "real ingredients, sustainable, energizing",
+    name: "Snack Andino",
+    product_type: "Snack saludable a base de quinua y kiwicha",
+    tone: "Cálido y profesional, cercano al consumidor peruano",
+    audience: "Adultos jóvenes peruanos 25-40 años, conscientes de su salud",
+    visual_rules: "Verde olivo dominante, fondo claro, fotografía natural sin filtros, logo mínimo 80px",
+    forbidden_words: "barato, instantáneo, artificial",
+    key_messages: "ingredientes andinos, energía natural, hecho en Perú",
   });
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,6 +90,7 @@ function BrandDNAForm({ onCreated }: { onCreated: () => void }) {
         key_messages: form.key_messages.split(",").map((s) => s.trim()).filter(Boolean),
       });
       setResult(r);
+      setToast(`Marca "${r.name}" creada e indexada en RAG`);
       onCreated();
     } catch (e: any) {
       setErr(e.message);
@@ -98,14 +101,15 @@ function BrandDNAForm({ onCreated }: { onCreated: () => void }) {
 
   return (
     <div className="grid md:grid-cols-2 gap-5">
+      {toast && <Toast message={toast} variant="success" onDismiss={() => setToast(null)} />}
       <form onSubmit={submit} className="card space-y-3">
-        <h2 className="font-semibold">Define the brand</h2>
+        <h2 className="font-semibold">Define tu marca</h2>
         {(
           [
-            ["name", "Brand name"],
-            ["product_type", "Product type"],
-            ["tone", "Tone of voice"],
-            ["audience", "Target audience"],
+            ["name", "Nombre de la marca"],
+            ["product_type", "Tipo de producto"],
+            ["tone", "Tono de voz"],
+            ["audience", "Audiencia objetivo"],
           ] as const
         ).map(([k, label]) => (
           <div key={k}>
@@ -119,7 +123,7 @@ function BrandDNAForm({ onCreated }: { onCreated: () => void }) {
           </div>
         ))}
         <div>
-          <label className="text-xs uppercase tracking-wide muted">Visual rules</label>
+          <label className="text-xs uppercase tracking-wide muted">Reglas visuales</label>
           <textarea
             className="textarea mt-1"
             value={form.visual_rules}
@@ -128,7 +132,7 @@ function BrandDNAForm({ onCreated }: { onCreated: () => void }) {
         </div>
         <div>
           <label className="text-xs uppercase tracking-wide muted">
-            Forbidden words (comma-separated)
+            Palabras prohibidas (separadas por coma)
           </label>
           <input
             className="input mt-1"
@@ -138,7 +142,7 @@ function BrandDNAForm({ onCreated }: { onCreated: () => void }) {
         </div>
         <div>
           <label className="text-xs uppercase tracking-wide muted">
-            Key messages (comma-separated, in priority order)
+            Mensajes clave (separados por coma, en orden de prioridad)
           </label>
           <input
             className="input mt-1"
@@ -148,21 +152,21 @@ function BrandDNAForm({ onCreated }: { onCreated: () => void }) {
         </div>
         {err && <div className="text-red-400 text-sm">{err}</div>}
         <button className="btn btn-primary" disabled={busy} type="submit">
-          {busy ? "Generating manual…" : "Generate brand manual + index in RAG"}
+          {busy ? "Creando manual…" : "Crear manual de marca"}
         </button>
       </form>
 
       <div className="card">
-        <h2 className="font-semibold mb-3">Result</h2>
-        {!result && <div className="muted text-sm">Submit the form to see the structured manual + chunk count.</div>}
+        <h2 className="font-semibold mb-3">Resultado</h2>
+        {!result && <div className="muted text-sm">Envía el formulario para ver el manual estructurado y las secciones indexadas.</div>}
         {result && (
           <div className="space-y-3 text-sm">
             <div>
-              <span className="badge badge-approved">{result.sections_embedded} sections embedded</span>
+              <span className="badge badge-approved">{result.sections_embedded} secciones indexadas</span>
             </div>
             {Object.entries(result.sections || {}).map(([section, content]) => (
               <div key={section}>
-                <div className="text-xs uppercase tracking-wide muted">{section}</div>
+                <div className="text-xs uppercase tracking-wide muted">{humanSection(section)}</div>
                 <div className="mt-1">{content as string}</div>
               </div>
             ))}
@@ -185,14 +189,17 @@ function GenerateForm({
   onGenerated: () => void;
 }) {
   const [contentType, setContentType] = useState("product_description");
-  const [request, setRequest] = useState("Write a 50-word Instagram description for our snack");
+  const [request, setRequest] = useState(
+    "Crea una descripción de 50 palabras para Instagram que destaque los ingredientes andinos y el origen peruano del producto",
+  );
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState<Generation | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!activeBrand) return setErr("Create a brand first.");
+    if (!activeBrand) return setErr("Crea una marca primero.");
     setErr(null);
     setBusy(true);
     setOut(null);
@@ -203,6 +210,11 @@ function GenerateForm({
         request,
       });
       setOut(r);
+      if (r.status === "blocked") {
+        setToast("Generación bloqueada: revisa los conflictos de marca");
+      } else {
+        setToast("Contenido generado y enviado a aprobación");
+      }
       onGenerated();
     } catch (e: any) {
       setErr(e.message);
@@ -213,16 +225,23 @@ function GenerateForm({
 
   return (
     <div className="grid md:grid-cols-2 gap-5">
+      {toast && (
+        <Toast
+          message={toast}
+          variant={out?.status === "blocked" ? "error" : "success"}
+          onDismiss={() => setToast(null)}
+        />
+      )}
       <form onSubmit={submit} className="card space-y-3">
-        <h2 className="font-semibold">Creative engine</h2>
+        <h2 className="font-semibold">Generador de contenido</h2>
         <div>
-          <label className="text-xs uppercase tracking-wide muted">Brand</label>
+          <label className="text-xs uppercase tracking-wide muted">Marca</label>
           <select
             className="select mt-1"
             value={activeBrand}
             onChange={(e) => setActiveBrand(e.target.value)}
           >
-            {brands.length === 0 && <option value="">— create a brand first —</option>}
+            {brands.length === 0 && <option value="">— crea una marca primero —</option>}
             {brands.map((b) => (
               <option key={b.brand_id} value={b.brand_id}>
                 {b.name}
@@ -231,21 +250,21 @@ function GenerateForm({
           </select>
         </div>
         <div>
-          <label className="text-xs uppercase tracking-wide muted">Content type</label>
+          <label className="text-xs uppercase tracking-wide muted">Tipo de contenido</label>
           <select
             className="select mt-1"
             value={contentType}
             onChange={(e) => setContentType(e.target.value)}
           >
-            <option value="product_description">Product description</option>
-            <option value="video_script">Video script</option>
-            <option value="image_prompt">Image prompt</option>
-            <option value="social_post">Social post</option>
+            <option value="product_description">Descripción de producto</option>
+            <option value="video_script">Guion de video</option>
+            <option value="image_prompt">Prompt para imagen</option>
+            <option value="social_post">Post para redes sociales</option>
             <option value="tagline">Tagline</option>
           </select>
         </div>
         <div>
-          <label className="text-xs uppercase tracking-wide muted">Request</label>
+          <label className="text-xs uppercase tracking-wide muted">¿Qué quieres generar?</label>
           <textarea
             className="textarea mt-1"
             value={request}
@@ -254,16 +273,16 @@ function GenerateForm({
         </div>
         {err && <div className="text-red-400 text-sm">{err}</div>}
         <button className="btn btn-primary" disabled={busy} type="submit">
-          {busy ? "Generating…" : "Run RAG + generate"}
+          {busy ? "Generando…" : "Generar contenido"}
         </button>
         <div className="text-xs muted">
-          Try forbidden words like "cheap" in the request to see the conflict path.
+          Tip: prueba con palabras prohibidas (ej. "cheap") en tu pedido para ver cómo el sistema bloquea contenido fuera de marca.
         </div>
       </form>
 
       <div className="card">
-        <h2 className="font-semibold mb-3">Output</h2>
-        {!out && <div className="muted text-sm">Generation result + retrieved RAG chunks shown here.</div>}
+        <h2 className="font-semibold mb-3">Resultado</h2>
+        {!out && <div className="muted text-sm">El contenido generado y las referencias usadas aparecerán aquí.</div>}
         {out && (
           <div className="space-y-3">
             <StatusBadge status={out.status} />
@@ -275,12 +294,12 @@ function GenerateForm({
             )}
             {out.retrieved_chunks?.length > 0 && (
               <div>
-                <div className="text-xs uppercase tracking-wide muted mb-1">RAG retrieval</div>
+                <div className="text-xs uppercase tracking-wide muted mb-1">Referencias de marca usadas</div>
                 <ul className="space-y-1 text-sm">
                   {out.retrieved_chunks.map((c) => (
                     <li key={c.chunk_id} className="flex justify-between">
-                      <span>{c.section}</span>
-                      <span className="muted">sim={c.similarity.toFixed(3)}</span>
+                      <span>{humanSection(c.section)}</span>
+                      <span className="muted">relevancia {(c.similarity * 100).toFixed(0)}%</span>
                     </li>
                   ))}
                 </ul>
@@ -295,7 +314,7 @@ function GenerateForm({
 
 function HistoryView({ items }: { items: any[] }) {
   if (!items.length)
-    return <div className="card muted">Nothing yet — generate some content first.</div>;
+    return <div className="card muted">Aún no hay contenido — genera algo primero.</div>;
   return (
     <div className="space-y-3">
       {items.map((i) => (
@@ -310,7 +329,7 @@ function HistoryView({ items }: { items: any[] }) {
           </div>
           {i.audit_result && (
             <div className="mt-3 text-xs">
-              <div className="muted">Audit summary: {i.audit_result.summary}</div>
+              <div className="muted">Resumen de validación: {i.audit_result.summary}</div>
             </div>
           )}
         </div>

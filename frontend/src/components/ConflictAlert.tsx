@@ -6,7 +6,7 @@ export default function ConflictAlert({
   if (!conflicts || conflicts.length === 0) return null;
   return (
     <div className="card border-red-400/40 bg-red-500/10 mt-3">
-      <div className="font-bold text-red-300 mb-2">Brand rule violations</div>
+      <div className="font-bold text-red-300 mb-2">Conflictos con las reglas de marca</div>
       <ul className="space-y-2">
         {conflicts.map((c, i) => (
           <li key={i}>

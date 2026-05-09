@@ -1,3 +1,11 @@
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  approved_text: "Texto aprobado",
+  approved: "Publicación aprobada",
+  rejected: "Rechazado",
+  blocked: "Necesita ajuste",
+};
+
 export default function StatusBadge({ status }: { status: string }) {
   const cls =
     status === "pending"
@@ -9,5 +17,6 @@ export default function StatusBadge({ status }: { status: string }) {
       : status === "rejected"
       ? "badge badge-rejected"
       : "badge badge-blocked";
-  return <span className={cls}>{status.replace("_", " ")}</span>;
+  const label = STATUS_LABELS[status] || status.replace("_", " ");
+  return <span className={cls}>{label}</span>;
 }

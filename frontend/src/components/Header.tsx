@@ -32,7 +32,7 @@ export default function Header({ title }: { title: string }) {
             window.location.href = "/";
           }}
         >
-          Sign out
+          Cerrar sesión
         </button>
       </div>
     </header>
