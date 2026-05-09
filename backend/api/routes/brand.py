@@ -1,5 +1,7 @@
 """Brand DNA routes — Module I."""
-from fastapi import APIRouter, Depends, Request
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from ...application.brand_service import BrandService
@@ -36,3 +38,17 @@ async def list_brands(
 ) -> JSONResponse:
     items = await svc.list_brands(user.user_id)
     return JSONResponse(content=items)
+
+
+@router.get("/brands/{brand_id}")
+@limiter.limit("60/minute")
+async def get_brand(
+    request: Request,
+    brand_id: UUID,
+    user: AuthUser = Depends(require_roles("creator")),
+    svc: BrandService = Depends(get_brand_service),
+) -> JSONResponse:
+    brand = await svc.get_brand(user_id=user.user_id, brand_id=brand_id)
+    if brand is None:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    return JSONResponse(content=brand)

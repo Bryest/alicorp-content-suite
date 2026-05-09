@@ -136,6 +136,7 @@ export const api = {
   createBrand: (payload: any) =>
     request<any>("/api/v1/brand-dna", { method: "POST", body: JSON.stringify(payload) }),
   listBrands: () => request<any[]>("/api/v1/brands"),
+  getBrand: (id: string) => request<any>(`/api/v1/brands/${id}`),
   generate: (payload: any) =>
     request<any>("/api/v1/generate", { method: "POST", body: JSON.stringify(payload) }),
   listContent: (params?: { status?: string; brand_id?: string }) => {

@@ -140,3 +140,45 @@ class BrandService:
             }
             for m in manuals
         ]
+
+    async def get_brand(self, *, user_id: UUID, brand_id: UUID) -> dict[str, Any] | None:
+        """Returns full brand manual (with parsed sections) for a single brand owned by the user."""
+        manual = await self.repo.get_manual(brand_id)
+        if manual is None or manual.user_id != user_id:
+            return None
+        sections = _parse_sections_from_raw_manual(manual.raw_manual)
+        return {
+            "brand_id": str(manual.id),
+            "name": manual.name,
+            "product_type": manual.product_type,
+            "tone": manual.tone,
+            "audience": manual.audience,
+            "raw_manual": manual.raw_manual,
+            "sections": sections,
+            "created_at": manual.created_at.isoformat(),
+        }
+
+
+def _parse_sections_from_raw_manual(raw: str) -> dict[str, str]:
+    """Parse a raw_manual produced by `create_brand_manual()` back into {SECTION: content} pairs.
+
+    The raw_manual format is `## SECTION\\ncontent\\n\\n## SECTION\\n...` so this is a tolerant split.
+    """
+    if not raw:
+        return {}
+    sections: dict[str, str] = {}
+    current_key: str | None = None
+    buffer: list[str] = []
+    for line in raw.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            if current_key is not None:
+                sections[current_key] = "\n".join(buffer).strip()
+            current_key = stripped[3:].strip()
+            buffer = []
+        else:
+            if current_key is not None:
+                buffer.append(line)
+    if current_key is not None:
+        sections[current_key] = "\n".join(buffer).strip()
+    return sections

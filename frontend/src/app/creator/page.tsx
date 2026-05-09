@@ -196,6 +196,28 @@ function GenerateForm({
   const [out, setOut] = useState<Generation | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [brandDetails, setBrandDetails] = useState<any | null>(null);
+  const [showBrandPanel, setShowBrandPanel] = useState(false);
+
+  // Cuando cambia la marca seleccionada, traer el manual completo
+  useEffect(() => {
+    if (!activeBrand) {
+      setBrandDetails(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getBrand(activeBrand)
+      .then((b) => {
+        if (!cancelled) setBrandDetails(b);
+      })
+      .catch(() => {
+        if (!cancelled) setBrandDetails(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeBrand]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -244,10 +266,38 @@ function GenerateForm({
             {brands.length === 0 && <option value="">— crea una marca primero —</option>}
             {brands.map((b) => (
               <option key={b.brand_id} value={b.brand_id}>
-                {b.name}
+                {b.name} · {formatBrandTimestamp(b.created_at)}
               </option>
             ))}
           </select>
+          {brandDetails && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setShowBrandPanel((v) => !v)}
+                className="text-xs muted hover:text-white underline"
+              >
+                {showBrandPanel ? "▼ Ocultar manual" : "▶ Ver manual de la marca"}
+              </button>
+              {showBrandPanel && (
+                <div className="mt-2 p-3 rounded-lg border border-white/10 bg-white/[0.03] space-y-2 text-sm">
+                  <div className="text-xs muted">
+                    <strong>{brandDetails.name}</strong> ·{" "}
+                    {brandDetails.product_type || "sin tipo"}
+                  </div>
+                  {brandDetails.sections &&
+                    Object.entries(brandDetails.sections).map(([k, v]) => (
+                      <div key={k}>
+                        <div className="text-xs uppercase tracking-wide muted">
+                          {humanSection(k)}
+                        </div>
+                        <div className="text-sm mt-0.5">{v as string}</div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div>
           <label className="text-xs uppercase tracking-wide muted">Tipo de contenido</label>
@@ -275,8 +325,16 @@ function GenerateForm({
         <button className="btn btn-primary" disabled={busy} type="submit">
           {busy ? "Generando…" : "Generar contenido"}
         </button>
-        <div className="text-xs muted">
-          Tip: prueba con palabras prohibidas (ej. "cheap") en tu pedido para ver cómo el sistema bloquea contenido fuera de marca.
+        <div className="text-xs muted space-y-1">
+          <div>
+            <strong>Tip:</strong> los modelos generativos aproximan longitudes —
+            pide "descripción corta", "3 oraciones" o "post largo" en vez de
+            cantidades exactas para mejores resultados.
+          </div>
+          <div>
+            Prueba palabras prohibidas (ej. "barato") en tu pedido para ver
+            cómo el sistema bloquea contenido fuera de marca.
+          </div>
         </div>
       </form>
 
@@ -288,9 +346,22 @@ function GenerateForm({
             <StatusBadge status={out.status} />
             <ConflictAlert conflicts={out.conflicts} />
             {out.content && (
-              <div className="border border-white/10 rounded-lg p-3 bg-white/5 whitespace-pre-wrap">
-                {out.content}
-              </div>
+              <>
+                <div className="border border-white/10 rounded-lg p-3 bg-white/5 whitespace-pre-wrap">
+                  {out.content}
+                </div>
+                <div className="flex items-center justify-between text-xs muted">
+                  <span>{wordCount(out.content)} palabras · {out.content.length} caracteres</span>
+                  <button
+                    type="button"
+                    onClick={() => submit({ preventDefault: () => {} } as React.FormEvent)}
+                    disabled={busy}
+                    className="text-xs underline hover:text-white"
+                  >
+                    Regenerar
+                  </button>
+                </div>
+              </>
             )}
             {out.retrieved_chunks?.length > 0 && (
               <div>
@@ -310,6 +381,34 @@ function GenerateForm({
       </div>
     </div>
   );
+}
+
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function formatBrandTimestamp(iso: string): string {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    const now = new Date();
+    const sameDay =
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate();
+    const time = d.toLocaleTimeString("es-PE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    if (sameDay) return `hoy ${time}`;
+    const date = d.toLocaleDateString("es-PE", {
+      day: "2-digit",
+      month: "2-digit",
+    });
+    return `${date} ${time}`;
+  } catch {
+    return iso;
+  }
 }
 
 function HistoryView({ items }: { items: any[] }) {
