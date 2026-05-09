@@ -51,12 +51,24 @@ body {
   color: #e6e8eb;
   font-size: 0.95rem;
   transition: border 120ms ease;
+  color-scheme: dark;
 }
 .input:focus, .textarea:focus, .select:focus {
   outline: none;
   border-color: #A8E063;
 }
 .textarea { min-height: 120px; resize: vertical; }
+
+/* Force dark theme on native dropdown options across browsers */
+.select option {
+  background-color: #15181d;
+  color: #e6e8eb;
+}
+.select option:checked,
+.select option:hover {
+  background-color: #1f242b;
+  color: #ffffff;
+}
 
 .badge {
   display: inline-flex;

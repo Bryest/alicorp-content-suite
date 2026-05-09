@@ -66,13 +66,13 @@ export default function CreatorPage() {
 
 function BrandDNAForm({ onCreated }: { onCreated: () => void }) {
   const [form, setForm] = useState({
-    name: "Snack Andino",
-    product_type: "Snack saludable a base de quinua y kiwicha",
-    tone: "Cálido y profesional, cercano al consumidor peruano",
-    audience: "Adultos jóvenes peruanos 25-40 años, conscientes de su salud",
-    visual_rules: "Verde olivo dominante, fondo claro, fotografía natural sin filtros, logo mínimo 80px",
-    forbidden_words: "barato, instantáneo, artificial",
-    key_messages: "ingredientes andinos, energía natural, hecho en Perú",
+    name: "Inka Chips",
+    product_type: "Snack de papas nativas peruanas, sin colorantes ni saborizantes artificiales",
+    tone: "Orgulloso, cercano y auténtico — celebra la identidad andina sin caer en folclorismo",
+    audience: "Familias peruanas y consumidores 25-45 años que valoran ingredientes locales y naturales",
+    visual_rules: "Paleta tierra (terracota, ocre, marrón) + acentos rojo andino. Fondos neutros claros. Fotografía natural mostrando textura de papas nativas y origen agrícola. Logo siempre visible (mín. 80px). Evitar saturación digital o filtros agresivos.",
+    forbidden_words: "barato, instantáneo, artificial, frito",
+    key_messages: "papas nativas del Perú, ingredientes 100% naturales, sabor auténtico andino",
   });
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -190,7 +190,7 @@ function GenerateForm({
 }) {
   const [contentType, setContentType] = useState("product_description");
   const [request, setRequest] = useState(
-    "Crea una descripción de 50 palabras para Instagram que destaque los ingredientes andinos y el origen peruano del producto",
+    "Escribe una descripción de 50 palabras para Instagram que destaque las papas nativas peruanas y el sabor auténtico andino del producto",
   );
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState<Generation | null>(null);
