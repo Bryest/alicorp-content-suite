@@ -6,10 +6,9 @@ pydantic==2.9.2
 pydantic-settings==2.5.2
 
 # ── Auth ─────────────────────────────────────────────────────
-PyJWT==2.9.0
-python-jose[cryptography]==3.3.0
+PyJWT[crypto]==2.9.0
 
-# ── External services (all optional at runtime — mock mode kicks in if absent) ─
+# ── External services ────────────────────────────────────────
 supabase==2.8.1
 groq==0.11.0
 google-generativeai==0.8.3

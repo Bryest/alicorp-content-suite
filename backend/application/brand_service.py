@@ -1,14 +1,5 @@
-"""
-BrandService — Module I (Brand DNA Architect).
+"""BrandService — Module I. Generates the brand manual, embeds chunks, persists to RAG."""
 
-Responsibilities:
-  1. Generate the structured brand manual via the LLM
-  2. Materialize 5 BrandChunks (one per canonical section)
-  3. Embed each chunk and persist
-  4. Trace the whole flow to Langfuse
-"""
-
-from __future__ import annotations
 
 import logging
 import time
@@ -69,7 +60,7 @@ class BrandService:
                 input_data={"payload_keys": list(payload.keys())},
                 output_data={"sections_returned": list(sections_text.keys())},
                 latency_ms=llm_ms,
-                metadata={"model": self.groq.settings.groq_model, "mocked": self.groq.is_mocked},
+                metadata={"model": self.groq.settings.groq_model},
             )
 
             # 2) Build the aggregate
@@ -124,7 +115,7 @@ class BrandService:
                     "dim": len(embeddings[0]) if embeddings else 0,
                 },
                 latency_ms=embed_ms,
-                metadata={"mocked": self.embedder.is_mocked},
+                metadata={"model": self.embedder.settings.gemini_embedding_model},
             )
 
             output = {

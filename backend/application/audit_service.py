@@ -1,16 +1,5 @@
-"""
-AuditService — Module III (Governance & Multimodal Audit).
+"""AuditService — Module III. Approver A text decision + Approver B Gemini Vision audit."""
 
-Two responsibilities:
-  - Approver A text decision (APPROVED_TEXT or REJECTED)
-  - Approver B image audit (drives APPROVED or REJECTED via Gemini)
-
-Every transition is enforced by the domain ApprovalStateMachine, so the
-service can never push an item into an illegal state regardless of API
-input. Every external call is traced.
-"""
-
-from __future__ import annotations
 
 import logging
 import time
@@ -182,7 +171,7 @@ class AuditService:
                     "summary": audit.get("summary"),
                 },
                 latency_ms=audit_ms,
-                metadata={"mocked": self.gemini.is_mocked},
+                metadata={"model": self.gemini.settings.gemini_vision_model},
             )
 
             # 3) Drive state machine

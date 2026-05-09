@@ -1,5 +1,4 @@
-"""Centralized settings (stdlib only). Missing API keys flip adapters into mock mode."""
-from __future__ import annotations
+"""Centralized settings (stdlib only). Adapters fail-fast on missing credentials."""
 import os
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -43,38 +42,9 @@ class Settings:
     environment: str = "development"
     log_level: str = "INFO"
     cors_origins: List[str] = field(default_factory=lambda: ["http://localhost:3000"])
-    mock_jwt_secret: str = "alicorp-content-suite-dev-secret-change-me"
     rag_top_k: int = 3
     rag_min_similarity: float = 0.5
     llm_temperature: float = 0.2
-
-    @property
-    def supabase_mocked(self) -> bool:
-        return not (self.supabase_url and self.supabase_service_role_key)
-
-    @property
-    def groq_mocked(self) -> bool:
-        return not self.groq_api_key
-
-    @property
-    def google_mocked(self) -> bool:
-        return not self.google_api_key
-
-    @property
-    def langfuse_mocked(self) -> bool:
-        return not (self.langfuse_public_key and self.langfuse_secret_key)
-
-    @property
-    def jwt_secret(self) -> str:
-        return self.supabase_jwt_secret or self.mock_jwt_secret
-
-    def mock_mode_summary(self) -> dict:
-        return {
-            "supabase": self.supabase_mocked,
-            "groq": self.groq_mocked,
-            "google": self.google_mocked,
-            "langfuse": self.langfuse_mocked,
-        }
 
 
 @lru_cache
@@ -97,7 +67,6 @@ def get_settings() -> Settings:
         environment=_env("ENVIRONMENT") or Settings.environment,
         log_level=_env("LOG_LEVEL") or Settings.log_level,
         cors_origins=_csv(_env("CORS_ORIGINS")) or ["http://localhost:3000", "http://localhost:3001"],
-        mock_jwt_secret=_env("MOCK_JWT_SECRET") or Settings.mock_jwt_secret,
     )
     try:
         s.rag_top_k = int(_env("RAG_TOP_K") or 3)

@@ -54,6 +54,20 @@ function humanizeError(status: number, body: string): string {
     return "El sistema no encontró suficiente contexto de marca para tu pedido. Intenta una solicitud más alineada con la marca, o ajusta el manual.";
   }
 
+  // Mensajes específicos de proveedores upstream (mapeados por el backend)
+  if (lower.includes("groq rate limit") || lower.includes("free-tier quota")) {
+    return "Alcanzaste el límite de la cuenta gratuita del proveedor de IA. El cupo se reinicia diariamente — intenta de nuevo más tarde.";
+  }
+  if (lower.includes("cannot reach")) {
+    return "No podemos conectarnos al proveedor de IA en este momento. Reintenta en unos segundos.";
+  }
+  if (lower.includes("blocked by") && lower.includes("safety")) {
+    return "El contenido fue bloqueado por los filtros de seguridad del proveedor. Reformula tu pedido.";
+  }
+  if (lower.includes("model is not available")) {
+    return "El modelo configurado no está disponible. Contacta al administrador.";
+  }
+
   // Errores genéricos por código HTTP
   switch (status) {
     case 400:
@@ -64,6 +78,8 @@ function humanizeError(status: number, body: string): string {
       return "No tienes permisos para esta acción.";
     case 404:
       return "No encontramos lo que buscas.";
+    case 408:
+      return "El servidor tardó demasiado en responder. Intenta de nuevo.";
     case 409:
       return detail || "Esta acción no se puede ejecutar en el estado actual del item.";
     case 413:
@@ -73,11 +89,12 @@ function humanizeError(status: number, body: string): string {
     case 422:
       return "Datos del formulario inválidos. Revisa los campos.";
     case 429:
-      return "Has alcanzado el límite del servicio gratuito. Espera unos minutos e inténtalo de nuevo.";
-    case 500:
+      return "Alcanzaste el límite gratuito del servicio. Espera unos minutos e inténtalo de nuevo.";
     case 502:
     case 503:
     case 504:
+      return "El proveedor de IA externo tuvo un problema. Intenta de nuevo en unos segundos.";
+    case 500:
       return "Tuvimos un problema procesando tu solicitud. Intenta de nuevo en unos segundos.";
     default:
       return detail || `Error ${status}`;
@@ -115,10 +132,7 @@ export const api = {
       "/api/v1/auth/login",
       { method: "POST", body: JSON.stringify({ email, password }) }
     ),
-  demoUsers: () => request<{ users: Array<{ email: string; password: string; role: string }> }>(
-    "/api/v1/auth/demo-users"
-  ),
-  health: () => request<{ status: string; mock_mode: Record<string, boolean> }>("/api/v1/health"),
+  health: () => request<{ status: string; version: string; environment: string }>("/api/v1/health"),
   createBrand: (payload: any) =>
     request<any>("/api/v1/brand-dna", { method: "POST", body: JSON.stringify(payload) }),
   listBrands: () => request<any[]>("/api/v1/brands"),

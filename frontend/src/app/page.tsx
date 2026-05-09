@@ -3,22 +3,15 @@ import { useEffect, useState } from "react";
 import { api, auth, landingPathForRole } from "@/lib/api";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("creator@test.com");
-  const [password, setPassword] = useState("Test1234!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [demoUsers, setDemoUsers] = useState<
-    Array<{ email: string; password: string; role: string }>
-  >([]);
-  const [mockMode, setMockMode] = useState<Record<string, boolean> | null>(null);
 
   useEffect(() => {
     if (auth.token()) {
       window.location.href = landingPathForRole(auth.role() || "creator");
-      return;
     }
-    api.demoUsers().then((d) => setDemoUsers(d.users)).catch(() => {});
-    api.health().then((h) => setMockMode(h.mock_mode)).catch(() => {});
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
@@ -54,6 +47,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
           />
         </div>
         <div>
@@ -64,6 +58,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="current-password"
           />
         </div>
         {err && <div className="text-red-400 text-sm">{err}</div>}
@@ -71,30 +66,6 @@ export default function LoginPage() {
           {busy ? "Iniciando sesión…" : "Iniciar sesión"}
         </button>
       </form>
-
-      {demoUsers.length > 0 && (
-        <div className="mt-6 card">
-          <div className="text-xs uppercase tracking-wide muted mb-3">Cuentas de prueba</div>
-          <div className="space-y-2">
-            {demoUsers.map((u) => (
-              <button
-                key={u.email}
-                onClick={() => {
-                  setEmail(u.email);
-                  setPassword(u.password);
-                }}
-                className="w-full text-left p-2 rounded-md hover:bg-white/5 transition flex justify-between items-center"
-              >
-                <div>
-                  <div className="text-sm">{u.email}</div>
-                  <div className="text-xs muted">{u.role}</div>
-                </div>
-                <div className="text-xs muted">click para autorrellenar</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </main>
   );
 }

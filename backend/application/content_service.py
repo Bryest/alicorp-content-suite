@@ -1,11 +1,11 @@
 """ContentService — Module II (Creative Engine). RAG-grounded content generation."""
-from __future__ import annotations
 
 import logging
 import time
 from typing import Any, Optional
 from uuid import UUID
 
+from ..config import get_settings
 from ..domain.brand import BrandRepository, BrandSection, ForbiddenWords
 from ..domain.content import (
     ApprovalStatus,
@@ -47,19 +47,10 @@ class ContentService:
         top_k: Optional[int] = None,
         min_similarity: Optional[float] = None,
     ) -> dict[str, Any]:
-        from ..config import get_settings
-
         settings = get_settings()
         top_k = top_k or settings.rag_top_k
-        # Lower the floor automatically when on the mock embedder, whose
-        # hash-based vectors yield ~0.3-0.5 typical similarity (vs ~0.6+
-        # from real Gemini embeddings). Real-mode keeps the strict default.
         if min_similarity is None:
-            base = settings.rag_min_similarity
-            if self.embedder.is_mocked and base >= 0.5:
-                min_similarity = 0.2
-            else:
-                min_similarity = base
+            min_similarity = settings.rag_min_similarity
 
         with self.tracer.trace(
             "content-generation",
@@ -117,7 +108,6 @@ class ContentService:
                 metadata={
                     "embed_ms": embed_ms,
                     "search_ms": retrieval_ms,
-                    "mocked_embedder": self.embedder.is_mocked,
                 },
             )
 
@@ -169,7 +159,7 @@ class ContentService:
                     "conflicts": gen.get("conflicts", []),
                 },
                 latency_ms=llm_ms,
-                metadata={"mocked": self.groq.is_mocked},
+                metadata={"model": self.groq.settings.groq_model},
             )
 
             # 6) Post-generation conflict scan (defense-in-depth)

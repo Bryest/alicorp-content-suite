@@ -5,7 +5,6 @@ Lazily constructed singletons for repos, infra clients, services, and
 the Langfuse tracer. FastAPI routes pull them via Depends().
 """
 
-from __future__ import annotations
 
 from functools import lru_cache
 

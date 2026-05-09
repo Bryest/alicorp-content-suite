@@ -8,7 +8,6 @@ entity so application + tests can build/validate it without
 infrastructure imports.
 """
 
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any

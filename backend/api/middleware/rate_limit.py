@@ -1,21 +1,4 @@
-"""
-Rate limiting via slowapi.
-
-Per-IP token bucket. State lives in-process — fine for single-instance
-deployments (Render free tier). For horizontal scaling, swap in
-RedisStorageURI as the storage backend.
-
-Usage in routes:
-    from ..middleware.rate_limit import limiter
-
-    @router.post("/foo")
-    @limiter.limit("5/minute")
-    async def foo(request: Request, ...):
-        ...
-
-The first argument MUST be `request: Request` (slowapi requirement).
-"""
-from __future__ import annotations
+"""Per-IP rate limiting (slowapi). For horizontal scaling, swap to RedisStorageURI."""
 
 from fastapi import Request
 from fastapi.responses import JSONResponse

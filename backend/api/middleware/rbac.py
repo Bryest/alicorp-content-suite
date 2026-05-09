@@ -7,7 +7,6 @@ this gives us a 403 on any cross-role attempt — the database RLS layer
 is the second defense.
 """
 
-from __future__ import annotations
 
 from fastapi import Depends, HTTPException, status
 

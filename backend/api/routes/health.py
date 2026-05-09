@@ -1,6 +1,5 @@
 """Health + system info."""
 
-from __future__ import annotations
 
 from datetime import datetime, timezone
 
@@ -19,5 +18,5 @@ async def health() -> HealthResponse:
         status="ok",
         version="1.0.0",
         timestamp=datetime.now(timezone.utc).isoformat(),
-        mock_mode=settings.mock_mode_summary(),
+        environment=settings.environment,
     )

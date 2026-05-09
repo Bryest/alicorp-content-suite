@@ -1,26 +1,7 @@
-"""
-JWT auth middleware.
+"""JWT auth middleware. Verifies Supabase ES256 (JWKS) + HS256 legacy fallback."""
 
-Two modes, transparent to routes:
-
-  REAL Supabase mode
-    - SUPABASE_JWT_SECRET set
-    - We verify the JWT using the supabase HS256 secret
-    - User role comes from the public.user_roles table
-
-  MOCK mode (no Supabase keys)
-    - We issue our own HS256 JWTs from POST /api/v1/auth/login against
-      the static DEMO_USERS dictionary
-    - Role is encoded as a custom claim 'role' on the token
-
-`get_current_user` is the single dependency used by routes; routes
-never see which mode is active.
-"""
-
-from __future__ import annotations
 
 import logging
-import time
 from typing import Optional
 from uuid import UUID
 
@@ -28,9 +9,9 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient
+from supabase import create_client
 
 from ...config import get_settings
-from ...infrastructure.supabase_client import DEMO_USERS
 
 logger = logging.getLogger(__name__)
 
@@ -59,29 +40,6 @@ class AuthUser:
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"AuthUser(user_id={self.user_id}, email={self.email}, role={self.role})"
-
-
-def issue_mock_token(email: str, password: str) -> Optional[dict]:
-    """Validate a demo login and return (token, user_record) or None."""
-    user = DEMO_USERS.get(email.lower())
-    if not user or user["password"] != password:
-        return None
-    settings = get_settings()
-    payload = {
-        "sub": str(user["id"]),
-        "email": user["email"],
-        "role": user["role"],
-        "iat": int(time.time()),
-        "exp": int(time.time()) + 60 * 60 * 8,  # 8 hours
-        "iss": "alicorp-content-suite-mock",
-    }
-    token = jwt.encode(payload, settings.mock_jwt_secret, algorithm="HS256")
-    return {
-        "token": token,
-        "user_id": user["id"],
-        "email": user["email"],
-        "role": user["role"],
-    }
 
 
 _ASYMMETRIC_ALGS = {"ES256", "ES384", "ES512", "RS256", "RS384", "RS512", "EdDSA"}
@@ -114,24 +72,18 @@ def _decode(token: str) -> dict:
             last_err = e
             logger.warning(f"JWKS verify failed (alg={alg}): {e}")
 
-    # 3) Symmetric tokens — mock JWTs and Supabase legacy HS256 (if anyone
-    # ever rotates back). We try Supabase legacy secret first, then mock.
-    candidates: list[str] = []
+    # 3) Legacy HS256 path — Supabase legacy JWT secret (still supported by
+    # Supabase as a verification key for older tokens).
     if settings.supabase_jwt_secret:
-        candidates.append(settings.supabase_jwt_secret)
-    candidates.append(settings.mock_jwt_secret)
-
-    for secret in candidates:
         try:
             return jwt.decode(
                 token,
-                secret,
+                settings.supabase_jwt_secret,
                 algorithms=["HS256"],
                 options={"verify_aud": False},
             )
         except Exception as e:
             last_err = e
-            continue
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -169,17 +121,17 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid subject",
         )
-    return AuthUser(user_id=user_id, email=email, role=role or "creator")
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No application role assigned to this user",
+        )
+    return AuthUser(user_id=user_id, email=email, role=role)
 
 
 def _resolve_role_for_user(user_id: str, email: str) -> Optional[str]:
     settings = get_settings()
-    if settings.supabase_mocked:
-        u = DEMO_USERS.get((email or "").lower())
-        return u["role"] if u else None
     try:
-        from supabase import create_client
-
         client = create_client(settings.supabase_url, settings.supabase_service_role_key)
         resp = (
             client.table("user_roles")

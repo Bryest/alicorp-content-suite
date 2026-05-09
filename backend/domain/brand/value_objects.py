@@ -6,7 +6,6 @@ encode the *rules* of the domain — e.g. forbidden words must be lowercase
 strings, sections must be one of a fixed set.
 """
 
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum

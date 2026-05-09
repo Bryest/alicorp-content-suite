@@ -1,6 +1,5 @@
 """Content context value objects + enums."""
 
-from __future__ import annotations
 
 from enum import Enum
 

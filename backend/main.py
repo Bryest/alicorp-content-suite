@@ -3,10 +3,10 @@
 Run locally:
     uvicorn backend.main:app --reload --port 8000
 """
-from __future__ import annotations
 
 import logging
 import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from .config import get_settings
+from .api.middleware.exception_handlers import register_provider_handlers
 from .api.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 from .api.routes import auth as auth_routes
 from .api.routes import brand as brand_routes
@@ -31,21 +32,35 @@ logger = logging.getLogger(__name__)
 access_log = logging.getLogger("access")
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Content Suite booted (env=%s).", settings.environment)
+    yield
+    # Shutdown (no-op for now; reserved for graceful provider client teardown)
+
+
 app = FastAPI(
     title="Content Suite — Alicorp IAGen Pleno",
     description=(
-        "Brand-aware content generation with RAG, multimodal audit, and full "
-        "Langfuse observability. Runs end-to-end with zero credentials thanks "
-        "to mock-mode adapters."
+        "Brand-aware content generation with RAG, multimodal audit and full "
+        "Langfuse observability."
     ),
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # ── Rate limiter ─────────────────────────────────────────────────
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# ── Upstream provider exception handlers ────────────────────────
+# Maps Groq/Gemini/Supabase/httpx exceptions to proper HTTP statuses
+# (429 for quota exhausted, 503 for connectivity, etc.) so the
+# frontend humanizer can show specific messages instead of "500".
+register_provider_handlers(app)
 
 # ── CORS ────────────────────────────────────────────────────────
 app.add_middleware(
@@ -95,8 +110,7 @@ app.include_router(content_routes.router)
 app.include_router(audit_routes.router)
 
 
-@app.exception_handler(Exception)
-async def _unhandled_exc(request: Request, exc: Exception):  # pragma: no cover
+async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.exception(f"Unhandled error on {request.url.path}: {exc}")
     return JSONResponse(
         status_code=500,
@@ -104,14 +118,7 @@ async def _unhandled_exc(request: Request, exc: Exception):  # pragma: no cover
     )
 
 
-@app.on_event("startup")
-async def _on_startup():
-    summary = settings.mock_mode_summary()
-    mocked = sorted(k for k, v in summary.items() if v)
-    real = sorted(k for k, v in summary.items() if not v)
-    logger.info("Content Suite booted (env=%s).", settings.environment)
-    logger.info("  Mock-mode services : %s", mocked or "none — fully real")
-    logger.info("  Real-mode services : %s", real or "none — fully mocked (zero-credential demo)")
+app.add_exception_handler(Exception, _unhandled_exception_handler)
 
 
 @app.get("/")
@@ -121,5 +128,5 @@ async def root():
         "module": "Alicorp IAGen Pleno Technical Challenge",
         "docs": "/docs",
         "health": "/api/v1/health",
-        "mock_mode": settings.mock_mode_summary(),
+        "environment": settings.environment,
     }

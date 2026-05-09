@@ -1,6 +1,5 @@
 """Domain-layer unit tests — pure Python, no I/O."""
 
-from __future__ import annotations
 
 import pytest
 

@@ -138,4 +138,4 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     timestamp: str
-    mock_mode: dict[str, bool]
+    environment: str
