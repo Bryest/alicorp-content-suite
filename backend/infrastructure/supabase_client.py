@@ -130,6 +130,18 @@ class SupabaseBrandRepository(BrandRepository):
         return result
 
 
+def _parse_dt(value) -> datetime:
+    """Tolerant ISO timestamp parser. Defaults to now() only if value is missing/invalid."""
+    if not value:
+        return datetime.now(timezone.utc)
+    if isinstance(value, datetime):
+        return value
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return datetime.now(timezone.utc)
+
+
 def _row_to_manual(r: dict) -> BrandManual:
     return BrandManual(
         id=UUID(r["id"]),
@@ -140,6 +152,8 @@ def _row_to_manual(r: dict) -> BrandManual:
         audience=r.get("target_audience") or "",
         raw_manual=r.get("raw_manual") or "",
         version=int(r.get("version") or 1),
+        created_at=_parse_dt(r.get("created_at")),
+        updated_at=_parse_dt(r.get("updated_at")),
     )
 
 
@@ -239,7 +253,10 @@ def _row_to_item(r: dict) -> ContentItem:
         ],
         approver_a_id=UUID(r["approver_a_id"]) if r.get("approver_a_id") else None,
         approver_a_notes=r.get("approver_a_notes"),
+        approver_a_at=_parse_dt(r["approver_a_at"]) if r.get("approver_a_at") else None,
         approver_b_id=UUID(r["approver_b_id"]) if r.get("approver_b_id") else None,
         audit_result=r.get("audit_result"),
         rejection_reason=r.get("rejection_reason"),
+        created_at=_parse_dt(r.get("created_at")),
+        updated_at=_parse_dt(r.get("updated_at")),
     )
