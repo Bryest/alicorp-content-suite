@@ -39,12 +39,9 @@ export default function LoginPage() {
   return (
     <main className="max-w-md mx-auto px-6 pt-20">
       <div className="text-center mb-8">
-        <div className="text-xs uppercase tracking-widest muted">
-          Alicorp · IAGen Pleno Challenge
-        </div>
-        <h1 className="text-3xl font-bold mt-2">Content Suite</h1>
-        <p className="muted text-sm mt-2">
-          Generación de contenido alineada a marca con RAG y validación multimodal
+        <h1 className="text-3xl font-bold">Content Suite</h1>
+        <p className="muted text-sm mt-3">
+          Generación de contenido alineada a marca con RAG
         </p>
       </div>
 
