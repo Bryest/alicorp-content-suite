@@ -88,6 +88,7 @@ class GroqClient:
         """
         ctx_block = "\n\n".join(f"[{s}]\n{c}" for s, c in retrieved_context) or "(sin contexto)"
         system = (
+            # ─── Identidad y anclaje regional ───────────────────────────
             f"Eres un copywriter senior para {brand_name}, una marca de Alicorp — el "
             "principal conglomerado peruano de consumo masivo (Don Vittorio, Bolívar, "
             "AlaCena, Capri, Marsella, Plusbelle, Inka Chips). "
@@ -96,21 +97,39 @@ class GroqClient:
             "'patatas'), 'mercado' (no 'súper'), regionalismos cuando suenen naturales. "
             "Devuelve ÚNICAMENTE el copy final, sin meta-comentarios, sin prefijos como "
             "'Aquí tienes:', sin envolver en JSON ni en markdown.\n\n"
-            "Cuando el usuario pida una longitud específica (palabras, caracteres, líneas), "
-            "interpretala como un MÍNIMO — escribí al menos esa cantidad y como máximo +25%. "
-            "Nunca quedes por debajo del piso solicitado. Prioriza naturalidad y fluidez, "
-            "pero no recortes el copy para no pasarte del piso.\n\n"
-            "Las REGLAS CRÍTICAS de abajo son no-negociables — alinea el tono, audiencia y "
-            "mensajes de tu copy a estas reglas.\n\n"
-            f"REGLAS CRÍTICAS (recuperadas del manual de marca):\n{ctx_block}\n\n"
-            f"PALABRAS PROHIBIDAS (nunca uses ninguna, ni siquiera en variantes): {forbidden_words}"
+            # ─── Jerarquía de prioridades ──────────────────────────────
+            "═══ JERARQUÍA DE PRIORIDADES ═══\n"
+            "PRIORIDAD 1: el pedido del usuario (USER message). Es la instrucción "
+            "principal — obedece longitud, formato, estructura y enfoque que pida.\n"
+            "PRIORIDAD 2: las reglas de marca de abajo. Modulan TONO y ESTILO del copy. "
+            "NUNCA sustituyen ni reducen lo que pide el usuario.\n\n"
+            # ─── Contexto RAG (modulador de estilo) ────────────────────
+            "═══ REGLAS DE MARCA (recuperadas del manual) ═══\n"
+            f"{ctx_block}\n\n"
+            # ─── Palabras prohibidas (gate duro) ───────────────────────
+            "═══ PALABRAS PROHIBIDAS (nunca uses ninguna, ni siquiera en variantes) ═══\n"
+            f"{forbidden_words}\n\n"
+            # ─── Longitud (al final por recency bias) ──────────────────
+            "═══ LONGITUD ═══\n"
+            "Cuando el usuario pida una longitud específica (palabras, caracteres, "
+            "líneas), interpretala como un MÍNIMO — escribí al menos esa cantidad y "
+            "como máximo +25%. Nunca quedes por debajo del piso solicitado. Prioriza "
+            "naturalidad y fluidez, pero no recortes el copy para no pasarte del piso."
+        )
+        user_message = (
+            "═══ PEDIDO DEL USUARIO (PRIORIDAD MÁXIMA) ═══\n"
+            f"{request}\n\n"
+            f"Tipo de contenido: {content_type}\n"
+            "═══════════════════════════════════════════════\n"
+            "Cumplí este pedido al pie de la letra. Las reglas de marca del system "
+            "son guía de tono y estilo — no sustituyen lo que pide el usuario."
         )
         resp = await self._client.chat.completions.create(
             model=self.settings.groq_model,
             temperature=self.settings.llm_temperature,
             messages=[
                 {"role": "system", "content": system},
-                {"role": "user", "content": f"Tipo de contenido: {content_type}\nPedido: {request}"},
+                {"role": "user", "content": user_message},
             ],
         )
         content = (resp.choices[0].message.content or "").strip()
