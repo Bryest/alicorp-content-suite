@@ -22,7 +22,7 @@ const REQUEST_TEMPLATES: Record<string, string> = {
   video_script:
     "Crea un guion de video corto con apertura visual, beneficio principal y cierre con call to action claro.",
   image_prompt:
-    "Genera un prompt en inglés para crear una imagen del producto siguiendo los visual rules de la marca (paleta, fondo, composición). Formato apto para Imagen o Midjourney.",
+    "Genera una descripción visual detallada para crear una imagen del producto siguiendo las reglas de marca (paleta, fondo, composición, encuadre, iluminación y mood).",
   social_post:
     "Escribe un post de Instagram emocional que conecte con la audiencia objetivo. Termina con un call to action y hashtags relevantes.",
   tagline:
