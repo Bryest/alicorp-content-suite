@@ -30,21 +30,22 @@ class GroqClient:
     async def generate_brand_manual(self, payload: dict[str, Any]) -> dict[str, str]:
         """Returns a dict keyed by BrandSection → string content."""
         system = (
-            "You are a senior brand strategist. Given the inputs, produce a structured "
-            "brand manual with exactly these five sections: TONE, AUDIENCE, FORBIDDEN, "
-            "VISUAL, MESSAGING. Each section is one paragraph (40–80 words), concrete "
-            "and enforceable. Output ONLY valid JSON of shape "
+            "Eres un brand strategist senior. Con los inputs dados, produce un manual "
+            "de marca estructurado con exactamente estas cinco secciones: TONE, AUDIENCE, "
+            "FORBIDDEN, VISUAL, MESSAGING. Cada sección debe ser concreta y accionable. "
+            "Responde SIEMPRE EN ESPAÑOL — no mezcles idiomas. "
+            "Devuelve ÚNICAMENTE JSON válido con esta forma:\n"
             '{"TONE":"...","AUDIENCE":"...","FORBIDDEN":"...","VISUAL":"...","MESSAGING":"..."}'
         )
         user = (
             "Inputs:\n"
-            f"- Brand name: {payload.get('name')}\n"
-            f"- Product type: {payload.get('product_type')}\n"
-            f"- Tone: {payload.get('tone')}\n"
-            f"- Audience: {payload.get('audience')}\n"
-            f"- Visual rules: {payload.get('visual_rules')}\n"
-            f"- Forbidden words: {payload.get('forbidden_words')}\n"
-            f"- Key messages: {payload.get('key_messages')}\n"
+            f"- Nombre de marca: {payload.get('name')}\n"
+            f"- Tipo de producto: {payload.get('product_type')}\n"
+            f"- Tono: {payload.get('tone')}\n"
+            f"- Audiencia: {payload.get('audience')}\n"
+            f"- Reglas visuales: {payload.get('visual_rules')}\n"
+            f"- Palabras prohibidas: {payload.get('forbidden_words')}\n"
+            f"- Mensajes clave: {payload.get('key_messages')}\n"
         )
         resp = await self._client.chat.completions.create(
             model=self.settings.groq_model,
@@ -75,16 +76,17 @@ class GroqClient:
         Returns:
           {"content": str | None, "conflicts": [{"rule","violation","suggestion"}, ...]}
         """
-        ctx_block = "\n\n".join(f"[{s}]\n{c}" for s, c in retrieved_context) or "(no context)"
+        ctx_block = "\n\n".join(f"[{s}]\n{c}" for s, c in retrieved_context) or "(sin contexto)"
         system = (
-            f"You are a brand copywriter for {brand_name}. The CRITICAL RULES below are "
-            "non-negotiable; if the user request would force a violation, do NOT generate "
-            "content — return {\"content\": null, \"conflicts\": [...]} explaining each rule "
-            "violated and a constructive suggestion.\n\n"
-            f"CRITICAL RULES (retrieved from the brand manual):\n{ctx_block}\n\n"
-            f"FORBIDDEN WORDS (case-insensitive, never use any): {forbidden_words}\n\n"
-            "Output ONLY valid JSON of shape:\n"
-            '{"content": "<string or null>", "conflicts": [{"rule":"...","violation":"...","suggestion":"..."}]}'
+            f"Eres un copywriter de marca para {brand_name}. Las REGLAS CRÍTICAS de abajo "
+            "son no-negociables; si el pedido del usuario forzaría una violación, NO generes "
+            "contenido — devuelve {\"content\": null, \"conflicts\": [...]} explicando cada "
+            "regla violada y una sugerencia constructiva.\n\n"
+            "Responde SIEMPRE EN ESPAÑOL — no mezcles idiomas en el texto generado.\n\n"
+            f"REGLAS CRÍTICAS (recuperadas del manual de marca):\n{ctx_block}\n\n"
+            f"PALABRAS PROHIBIDAS (case-insensitive, nunca uses ninguna): {forbidden_words}\n\n"
+            "Devuelve ÚNICAMENTE JSON válido con esta forma:\n"
+            '{"content": "<string o null>", "conflicts": [{"rule":"...","violation":"...","suggestion":"..."}]}'
         )
         resp = await self._client.chat.completions.create(
             model=self.settings.groq_model,
@@ -92,7 +94,7 @@ class GroqClient:
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system},
-                {"role": "user", "content": f"Content type: {content_type}\nRequest: {request}"},
+                {"role": "user", "content": f"Tipo de contenido: {content_type}\nPedido: {request}"},
             ],
         )
         raw = resp.choices[0].message.content or "{}"

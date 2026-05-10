@@ -15,6 +15,20 @@ type Generation = {
   status: string;
 };
 
+// Templates por defecto para cada tipo de contenido. Se autorrellenan al cambiar el dropdown.
+const REQUEST_TEMPLATES: Record<string, string> = {
+  product_description:
+    "Escribe una descripción atractiva del producto que destaque sus ingredientes, origen y diferenciador clave. Tono coherente con el manual de marca.",
+  video_script:
+    "Crea un guion de video corto con apertura visual, beneficio principal y cierre con call to action claro.",
+  image_prompt:
+    "Genera un prompt en inglés para crear una imagen del producto siguiendo los visual rules de la marca (paleta, fondo, composición). Formato apto para Imagen o Midjourney.",
+  social_post:
+    "Escribe un post de Instagram emocional que conecte con la audiencia objetivo. Termina con un call to action y hashtags relevantes.",
+  tagline:
+    "Crea un tagline corto y memorable que capture la esencia de la marca y sea fácil de recordar.",
+};
+
 export default function CreatorPage() {
   const [tab, setTab] = useState<"brand" | "generate" | "history">("brand");
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -189,15 +203,19 @@ function GenerateForm({
   onGenerated: () => void;
 }) {
   const [contentType, setContentType] = useState("product_description");
-  const [request, setRequest] = useState(
-    "Escribe una descripción de 50 palabras para Instagram que destaque las papas nativas peruanas y el sabor auténtico andino del producto",
-  );
+  const [request, setRequest] = useState(REQUEST_TEMPLATES.product_description);
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState<Generation | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [brandDetails, setBrandDetails] = useState<any | null>(null);
   const [showBrandPanel, setShowBrandPanel] = useState(false);
+
+  // Cuando cambia el tipo de contenido, autorrellenar con el template correspondiente
+  function handleContentTypeChange(newType: string) {
+    setContentType(newType);
+    setRequest(REQUEST_TEMPLATES[newType] || REQUEST_TEMPLATES.product_description);
+  }
 
   // Cuando cambia la marca seleccionada, traer el manual completo
   useEffect(() => {
@@ -304,7 +322,7 @@ function GenerateForm({
           <select
             className="select mt-1"
             value={contentType}
-            onChange={(e) => setContentType(e.target.value)}
+            onChange={(e) => handleContentTypeChange(e.target.value)}
           >
             <option value="product_description">Descripción de producto</option>
             <option value="video_script">Guion de video</option>
@@ -325,16 +343,8 @@ function GenerateForm({
         <button className="btn btn-primary" disabled={busy} type="submit">
           {busy ? "Generando…" : "Generar contenido"}
         </button>
-        <div className="text-xs muted space-y-1">
-          <div>
-            <strong>Tip:</strong> los modelos generativos aproximan longitudes —
-            pide "descripción corta", "3 oraciones" o "post largo" en vez de
-            cantidades exactas para mejores resultados.
-          </div>
-          <div>
-            Prueba palabras prohibidas (ej. "barato") en tu pedido para ver
-            cómo el sistema bloquea contenido fuera de marca.
-          </div>
+        <div className="text-xs muted">
+          Tip: usa palabras prohibidas como "barato" para ver el bloqueo de marca en acción.
         </div>
       </form>
 
