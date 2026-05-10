@@ -73,49 +73,34 @@ class GroqClient:
         forbidden_words: list[str],
     ) -> dict[str, Any]:
         """
+        Generates brand-aligned copy as free text. The LLM focuses 100% of its
+        output budget on the actual content; conflict detection (forbidden
+        words enforcement) is handled programmatically by the caller via
+        `ContentService._post_scan_for_forbidden`.
+
         Returns:
-          {"content": str | None, "conflicts": [{"rule","violation","suggestion"}, ...]}
+          {"content": str, "conflicts": []}
         """
         ctx_block = "\n\n".join(f"[{s}]\n{c}" for s, c in retrieved_context) or "(sin contexto)"
         system = (
-            f"Eres un copywriter de marca para {brand_name}. Las REGLAS CRÍTICAS de abajo "
-            "son no-negociables; si el pedido del usuario forzaría una violación, NO generes "
-            "contenido — devuelve {\"content\": null, \"conflicts\": [...]} explicando cada "
-            "regla violada y una sugerencia constructiva.\n\n"
-            "Responde SIEMPRE EN ESPAÑOL — no mezcles idiomas en el texto generado.\n\n"
+            f"Eres un copywriter de marca para {brand_name}. "
+            "Responde SIEMPRE EN ESPAÑOL — no mezcles idiomas en el texto generado. "
+            "Devuelve ÚNICAMENTE el copy final, sin meta-comentarios, sin prefijos como "
+            "'Aquí tienes:', sin envolver en JSON ni en markdown.\n\n"
+            "Las REGLAS CRÍTICAS de abajo son no-negociables — alinea el tono, audiencia y "
+            "mensajes de tu copy a estas reglas.\n\n"
             f"REGLAS CRÍTICAS (recuperadas del manual de marca):\n{ctx_block}\n\n"
-            f"PALABRAS PROHIBIDAS (case-insensitive, nunca uses ninguna): {forbidden_words}\n\n"
-            "Devuelve ÚNICAMENTE JSON válido con esta forma:\n"
-            '{"content": "<string o null>", "conflicts": [{"rule":"...","violation":"...","suggestion":"..."}]}'
+            f"PALABRAS PROHIBIDAS (nunca uses ninguna, ni siquiera en variantes): {forbidden_words}"
         )
         resp = await self._client.chat.completions.create(
             model=self.settings.groq_model,
             temperature=self.settings.llm_temperature,
-            response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": f"Tipo de contenido: {content_type}\nPedido: {request}"},
             ],
         )
-        raw = resp.choices[0].message.content or "{}"
-        data = json.loads(raw)
-        return _normalize_generation(data)
-
-
-def _normalize_generation(data: dict[str, Any]) -> dict[str, Any]:
-    content = data.get("content")
-    if content is not None and not isinstance(content, str):
-        content = str(content)
-    raw_conflicts = data.get("conflicts") or []
-    conflicts = []
-    for c in raw_conflicts:
-        if not isinstance(c, dict):
-            continue
-        conflicts.append(
-            {
-                "rule": str(c.get("rule", "")),
-                "violation": str(c.get("violation", "")),
-                "suggestion": str(c.get("suggestion", "")),
-            }
-        )
-    return {"content": content, "conflicts": conflicts}
+        content = (resp.choices[0].message.content or "").strip()
+        # Conflicts are intentionally empty here — ContentService runs
+        # `_post_scan_for_forbidden` defensively as the single source of truth.
+        return {"content": content, "conflicts": []}

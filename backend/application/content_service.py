@@ -171,8 +171,9 @@ class ContentService:
                 for c, sim in scored
             ]
 
-            # 7) Conflict path - block, do not save
-            if all_conflicts and gen.get("content") is None:
+            # 7) Conflict path — if forbidden words were detected (in any layer),
+            # block and do NOT persist the offending content.
+            if all_conflicts:
                 output = {
                     "content_id": None,
                     "content": None,
