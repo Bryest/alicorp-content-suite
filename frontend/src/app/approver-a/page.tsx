@@ -68,11 +68,6 @@ export default function ApproverAPage() {
             <div className="border border-white/10 rounded-lg p-3 bg-white/5 whitespace-pre-wrap text-sm">
               {i.content}
             </div>
-            {i.retrieved_chunks?.length > 0 && (
-              <div className="mt-3 text-xs muted">
-                Secciones de marca usadas: {i.retrieved_chunks.map((c: any) => `${humanSection(c.section)} (${(c.similarity * 100).toFixed(0)}%)`).join(" · ")}
-              </div>
-            )}
             <div className="mt-3 flex flex-col gap-2">
               <textarea
                 className="textarea"

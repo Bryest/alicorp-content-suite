@@ -373,19 +373,6 @@ function GenerateForm({
                 </div>
               </>
             )}
-            {out.retrieved_chunks?.length > 0 && (
-              <div>
-                <div className="text-xs uppercase tracking-wide muted mb-1">Referencias de marca usadas</div>
-                <ul className="space-y-1 text-sm">
-                  {out.retrieved_chunks.map((c) => (
-                    <li key={c.chunk_id} className="flex justify-between">
-                      <span>{humanSection(c.section)}</span>
-                      <span className="muted">relevancia {(c.similarity * 100).toFixed(0)}%</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         )}
       </div>
