@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Content Suite — Alicorp IAGen Pleno",
+    title="Content Suite",
     description=(
         "Brand-aware content generation with RAG, multimodal audit and full "
         "Langfuse observability."
@@ -125,7 +125,7 @@ app.add_exception_handler(Exception, _unhandled_exception_handler)
 async def root():
     return {
         "name": "Content Suite",
-        "module": "Alicorp IAGen Pleno Technical Challenge",
+        "module": "Alicorp Technical Challenge",
         "docs": "/docs",
         "health": "/api/v1/health",
         "environment": settings.environment,

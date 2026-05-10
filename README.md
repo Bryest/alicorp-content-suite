@@ -1,7 +1,7 @@
 # Content Suite
 
 > Plataforma para generación de contenido alineado a marca, con RAG y validación multimodal vía AI.
-> Construida para el reto técnico **Alicorp · IAGen Pleno**.
+> Construida para **Alicorp**.
 
 ---
 
