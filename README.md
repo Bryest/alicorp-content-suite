@@ -7,22 +7,32 @@
 
 ## El problema que resuelve
 
-Alicorp tiene **+12 marcas** (Don Vittorio, Inka Chips, Bolívar, AlaCena, Marsella, Plusbelle…). Cada una produce **miles de piezas de contenido al año** — descripciones de producto, posts de redes sociales, guiones de video, taglines.
+Alicorp tiene **+12 marcas** (Don Vittorio, Inka Chips, Bolívar, AlaCena, Marsella, Plusbelle…). Cada una produce **miles de piezas de contenido al año**: descripciones de producto, posts de redes sociales, guiones de video, taglines.
 
 Hoy, ese contenido se escribe a mano, se manda a revisión a marca + legal, y se itera 2-3 veces antes de publicarse. **Tiempo promedio: 4-8 horas por pieza. 3+ personas involucradas.**
 
-Content Suite reduce eso a **5-10 minutos por pieza**, automatizando el 80% del trabajo de revisión y manteniendo control humano en las decisiones finales.
+Content Suite reduce eso a **5-10 minutos por pieza**. Automatiza el 80% del trabajo de revisión, pero el aprobador humano tiene la última palabra.
+
+---
+
+## Stack tecnológico
+
+| Capa | Tecnología | Por qué |
+|---|---|---|
+| Backend | **FastAPI** + Python 3.11 | Async nativo, OpenAPI auto-generado, type hints estrictos |
+| Frontend | **Next.js 14** (App Router) + TypeScript | UI moderna, SSR opcional, ecosistema React |
+| Base de datos | **Supabase** (Postgres + pgvector) | Managed Postgres con búsqueda vectorial nativa, Auth incluido, free tier generoso |
+| LLM texto | **Groq Llama 3.3 70B** | Inferencia 5-10× más rápida que GPUs gracias a chips LPU custom |
+| Embeddings | **Gemini text-embedding-001** (768-dim MRL) | Top score MTEB en español/inglés, soporta truncación con MRL |
+| Visión | **Gemini 2.5 Flash** | Único multimodal con free tier viable; acepta imagen + texto en un prompt |
+| Observability | **Langfuse Cloud** | Trazas estructuradas, free tier 50K eventos/mes |
+| Hosting | **Render** (backend) + **Vercel** (frontend) | Free tier, deploy desde GitHub |
 
 ---
 
 ## Demo en vivo
 
-| Recurso | URL |
-|---|---|
-| Aplicación web | _ver email de entrega_ |
-| API + Swagger UI | `/docs` del backend |
-| Trazas de observabilidad | Langfuse Cloud (acceso por invitación) |
-| Repositorio | este repo |
+La aplicación web está desplegada en Vercel. La URL está visible en el panel derecho del repositorio. Las trazas de observabilidad viven en Langfuse Cloud (invitación enviada al email del recruiter).
 
 ### Credenciales para probar
 
@@ -38,10 +48,10 @@ Content Suite reduce eso a **5-10 minutos por pieza**, automatizando el 80% del 
 
 | Módulo | Qué hace |
 |---|---|
-| **I — Brand DNA Architect** | Toma 7 inputs simples (nombre, tono, audiencia, reglas visuales, palabras prohibidas…) y genera un manual de marca estructurado, indexado en una base de datos vectorial. |
-| **II — Creative Engine** | Genera contenido (descripciones, posts, guiones, taglines) consultando primero el manual vía RAG, garantizando que cada pieza esté alineada a marca. Bloquea palabras prohibidas automáticamente. |
-| **III — Governance & Multimodal Audit** | 3 roles (creator, aprobador A, aprobador B) + máquina de estados inviolable. El aprobador B sube una imagen, Gemini Vision la audita contra las reglas visuales de la marca y devuelve un check estructurado. |
-| **IV — Observability** | Cada llamada a IA queda trazada en Langfuse: qué se recuperó del RAG, qué prompt se envió, cuánto tardó la auditoría multimodal. |
+| **I · Brand DNA Architect** | Toma 7 inputs simples (nombre, tono, audiencia, reglas visuales, palabras prohibidas…) y genera un manual de marca estructurado, indexado en una base de datos vectorial. |
+| **II · Creative Engine** | Genera contenido (descripciones, posts, guiones, taglines) consultando primero el manual vía RAG, garantizando que cada pieza esté alineada a marca. Bloquea palabras prohibidas automáticamente. |
+| **III · Governance & Multimodal Audit** | 3 roles (creator, aprobador A, aprobador B) + máquina de estados inviolable. El aprobador B sube una imagen, Gemini Vision la audita contra las reglas visuales de la marca y devuelve un check estructurado. |
+| **IV · Observability** | Cada llamada a IA queda trazada en Langfuse: qué se recuperó del RAG, qué prompt se envió, cuánto tardó la auditoría multimodal. |
 
 ---
 
@@ -70,24 +80,6 @@ Aprobador B sube imagen
               └──► Aprueba → PUBLICACIÓN APROBADA
               └──► Rechaza → REJECTED
 ```
-
-Cada transición es enforced por una máquina de estados en el dominio. **No es posible saltar pasos** ni desde código ni desde la API.
-
----
-
-## Stack tecnológico
-
-| Capa | Tecnología | Por qué |
-|---|---|---|
-| Backend | **FastAPI** + Python 3.11 | Async nativo, OpenAPI auto-generado, type hints estrictos |
-| Frontend | **Next.js 14** (App Router) + TypeScript | UI moderna, SSR opcional, ecosistema React |
-| Base de datos | **Supabase** (Postgres + pgvector) | Managed Postgres con búsqueda vectorial nativa, Auth real, free tier generoso |
-| LLM texto | **Groq Llama 3.3 70B** | Inferencia 5-10× más rápida que GPUs gracias a chips LPU custom |
-| Embeddings | **Gemini text-embedding-001** (768-dim MRL) | Top score MTEB en español/inglés, soporta truncación con MRL |
-| Visión | **Gemini 2.5 Flash** | Único multimodal con free tier viable; acepta imagen + texto en un prompt |
-| Observability | **Langfuse Cloud** | Trazas estructuradas, free tier 50K eventos/mes |
-| Hosting | **Render** (backend) + **Vercel** (frontend) | Free tier, deploy desde GitHub |
-
 ---
 
 ## Arquitectura: hexagonal / DDD
@@ -113,51 +105,34 @@ backend/
 frontend/
 └── src/app/             # creator/, approver-a/, approver-b/ + login
 ```
-
-**Beneficio práctico:** swappear Groq por OpenAI mañana → solo se toca `groq_client.py`. Cero cambios en domain o application. Esa es la "test seam" que define hexagonal.
-
 ---
 
-## Decisiones de arquitectura (justificación para reviewers)
+## Decisiones de arquitectura
 
-### 1. Hexagonal/DDD en lugar de "Flask file"
-- **Por qué:** el reto involucra 4 módulos, 3 roles, máquina de estados inviolable y 5 proveedores externos. Sin separación clara, la lógica de marca termina mezclada con SDKs de terceros.
-- **Trade-off:** un poco más de scaffolding al principio, mucho más fácil de testear y evolucionar.
+### Hexagonal / DDD
+4 módulos, 3 roles, máquina de estados y 5 proveedores externos no entran prolijos en un archivo único. Separar el dominio (entidades de marca, transiciones de aprobación, value objects) de la infraestructura (SDKs externos) hace que cambiar Groq por OpenAI mañana sea editar un archivo, no buscar referencias por todo el repo. El precio fue más scaffolding al inicio.
 
-### 2. Supabase Auth real (no mock JWT)
-- **Por qué:** el reto exige 3 roles diferenciados; usar mock JWT con passwords hardcoded no demuestra capacidad real.
-- **Implementación:** login proxy a `/auth/v1/token` de Supabase, JWT firmado por Supabase con ES256 (asimétrico), verificación en backend vía JWKS endpoint.
+### Supabase Auth en lugar de JWT hardcodeado
+El reto pide 3 roles. Lo simple era firmar un HS256 con una clave en el `.env`. En vez de eso, el login es un proxy a `/auth/v1/token` de Supabase, los tokens son ES256 asimétricos firmados por Supabase, y el backend los valida contra el JWKS público.
 
-### 3. Fail-fast en cada adapter
-- **Por qué:** prefiero un crash explícito al arranque ("GROQ_API_KEY must be set") que degradación silenciosa a mock que confunde al usuario.
-- **Trade-off:** la app no corre sin keys. Es lo correcto para producción.
+### RAG con threshold
+La búsqueda vectorial filtra por similitud server-side. Si ningún chunk del manual de marca pasa el umbral, el endpoint devuelve `BLOCKED` y ni siquiera llama al LLM. Es la forma de evitar que el modelo invente cosas que no están en el manual.
 
-### 4. RAG con threshold de similitud + safety net
-- Si ningún chunk de marca supera el threshold de similitud → **el sistema NO genera**. Devuelve `BLOCKED` con explicación. Esta es la garantía anti-alucinación que el reto pide.
+### Embeddings de 768-dim (no 3072)
+Gemini Embedding 001 retorna 3072 por default. Truncamos a 768 con MRL (Matryoshka Representation Learning): 4× menos storage en pgvector, score MTEB ~68.0 vs ~68.2 (la diferencia es invisible en la práctica), y matchea el `vector(768)` del schema.
 
-### 5. Embeddings 768-dim (no 3072)
-- Gemini Embedding 001 retorna 3072-dim por default. Truncamos a 768 vía Matryoshka Representation Learning (MRL) porque:
-  - 4× menos storage en pgvector
-  - Score MTEB casi idéntico (~67.99 vs ~68.16)
-  - Matchea el schema `vector(768)`
-
-### 6. Mapeo centralizado de errores upstream
-- En `api/middleware/exception_handlers.py` mapeamos cada excepción de SDK a su HTTP status correcto:
-  - `groq.RateLimitError` → 429
-  - `google.api_core.exceptions.ResourceExhausted` → 429
-  - `httpx.TimeoutException` → 408
-  - …
-- El frontend luego traduce cada código a un mensaje en español. Cero leak de jerga técnica al usuario final.
+### Errores upstream mapeados en un solo lugar
+`api/middleware/exception_handlers.py` traduce cada excepción de SDK al HTTP status que corresponde: `groq.RateLimitError` → 429, `google.api_core.exceptions.ResourceExhausted` → 429, `httpx.TimeoutException` → 408, etc. El frontend agarra el status y muestra el mensaje al usuario en español. El backend no expone tracebacks.
 
 ---
 
 ## Capacidad operativa (free tier)
 
-Para una marca como **Inka Chips** —papas nativas, multi-SKU, comunicación frecuente— el sistema permite **20 piezas completas por día** (crear manual de marca → generar copy → validar imagen).
+Para una marca como **Inka Chips** (papas nativas, multi-SKU, comunicación frecuente), el sistema permite **20 piezas completas por día** (crear manual de marca → generar copy → validar imagen).
 
 El límite lo pone Gemini 2.5 Flash Vision (20 imágenes/día en cuenta gratuita). El cupo se reinicia diariamente.
 
-Texto y embeddings tienen muchísima más holgura (Groq 14,400 calls/día, Gemini Embedding 1,000 calls/día). Para producción real, el tier pagado elimina los límites y el costo operativo es del orden de **~$50/mes para 1,000 piezas de contenido** — equivalente a 1 hora del salario de un marketer.
+Texto y embeddings tienen muchísima más holgura (Groq 14,400 calls/día, Gemini Embedding 1,000 calls/día). Pasando a tier pagado los límites desaparecen y el costo queda en el orden de **~$50/mes para 1,000 piezas de contenido**, alrededor de 1 hora del salario de un marketer.
 
 ---
 
@@ -168,6 +143,7 @@ Texto y embeddings tienen muchísima más holgura (Groq 14,400 calls/día, Gemin
 | `POST` | `/api/v1/auth/login` | público | Login vía Supabase Auth |
 | `POST` | `/api/v1/brand-dna` | creator | Crear manual de marca + indexar en RAG |
 | `GET` | `/api/v1/brands` | creator | Listar marcas del usuario |
+| `GET` | `/api/v1/brands/{brand_id}` | creator | Detalle del manual con secciones parseadas |
 | `POST` | `/api/v1/generate` | creator | Generar contenido grounded en RAG |
 | `GET` | `/api/v1/content` | cualquiera | Listar items (con filtros) |
 | `GET` | `/api/v1/content/{id}` | cualquiera | Detalle de un item |
@@ -181,25 +157,25 @@ OpenAPI completo en `/docs` (Swagger UI interactivo).
 
 ## Seguridad
 
-- **JWT-protected endpoints** — toda ruta excepto `/health` y `/auth/login` requiere Bearer token. Cross-role calls retornan 403.
-- **Verificación JWT con JWKS** — los tokens de Supabase son ES256 asimétricos; el backend fetcha el JWKS público para verificar (no compartimos secret).
+- **JWT-protected endpoints**: toda ruta excepto `/health` y `/auth/login` requiere Bearer token. Cross-role calls retornan 403.
+- **Verificación JWT con JWKS**: los tokens de Supabase son ES256 asimétricos; el backend fetcha el JWKS público para verificar (no compartimos secret).
 - **Per-IP rate limiting** (slowapi):
-  - `/auth/login` — 5/min · previene credential stuffing
-  - `/brand-dna`, `/generate`, `/audit/image` — 5/min · capa el costo de LLM
-  - `/audit/text` — 20/min · solo DB, sin LLM
-  - resto — 60/min
-- **Security headers** — `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection` en cada response.
-- **CORS allowlist** — solo los dominios de Vercel autorizados pueden llamar al backend.
-- **Access log** estructurado por request — `METHOD path status latency_ms ip`.
+  - `/auth/login`: 5/min, previene credential stuffing
+  - `/brand-dna`, `/generate`, `/audit/image`: 5/min, capa el costo de LLM
+  - `/audit/text`: 20/min, solo DB sin LLM
+  - resto: 60/min
+- **Security headers**: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection` en cada response.
+- **CORS allowlist**: solo los dominios de Vercel autorizados pueden llamar al backend.
+- **Access log** estructurado por request: `METHOD path status latency_ms ip`.
 
 ---
 
-## Limitaciones honestas
+## Limitaciones
 
 - **Free tier de Gemini Vision = 20 audits/día.** En tier pagado el límite desaparece (~$0.04 por audit).
-- **Render free tier duerme** después de 15 min de inactividad — el primer request post-sleep tarda ~30s en arrancar (cold start).
-- **Es human-in-the-loop, no automation completa** — por diseño, los aprobadores siempre tienen veto final.
-- **RAG depende de la calidad del input al Brand DNA.** Manual pobre → recuperación pobre → contenido pobre. El "garbage in, garbage out" sigue aplicando.
+- **Render free tier duerme** después de 15 min de inactividad. El primer request post-sleep tarda ~30s en arrancar (cold start).
+- **El sistema es human-in-the-loop**, no automatización end-to-end. Los aprobadores siempre tienen veto final. Fue una decisión, no una limitación técnica.
+- **RAG depende de la calidad del input al Brand DNA.** Manual pobre → recuperación pobre → contenido pobre.
 
 ---
 
@@ -208,37 +184,8 @@ OpenAPI completo en `/docs` (Swagger UI interactivo).
 - **Q3** Fine-tuning con feedback de aprobadores (rejections → training data).
 - **Q4** Generación de imagen integrada (Imagen 3 conditioned al Brand DNA).
 - **2027** Integración con DAM corporativo + workflows en Slack/Teams.
-- **Multi-ambiente** (dev/staging/prod) — separación de Supabase + Render + Vercel para release safety.
-- **Módulo de admin** — gestión granular de roles y permisos vía UI.
-
----
-
-## Quick start local
-
-```bash
-# Requisitos: Python 3.11+, Node 18+, una cuenta en Supabase, Groq, Google AI Studio y Langfuse.
-
-# 1. Backend
-cd backend
-python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env  # y completa todas las keys
-cd ..
-uvicorn backend.main:app --reload --port 8000
-
-# 2. Frontend (terminal aparte)
-cd frontend
-npm install
-echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
-npm run dev
-
-# 3. Base de datos (una sola vez)
-# Pega db/schema.sql en el SQL Editor de Supabase y ejecuta.
-# Crea los 3 demo users en Authentication → Users.
-# Inserta sus UUIDs en la tabla user_roles.
-```
-
-Sin las API keys, los adapters fallan al arrancar con un mensaje explícito (`RuntimeError: GROQ_API_KEY must be set...`). No hay modo mock — esto es deliberado para evitar comportamiento sorpresivo en producción.
+- **Multi-ambiente** (dev/staging/prod): separación de Supabase + Render + Vercel para release safety.
+- **Módulo de admin**: gestión granular de roles y permisos vía UI.
 
 ---
 
@@ -250,19 +197,3 @@ Sin las API keys, los adapters fallan al arrancar con un mensaje explícito (`Ru
 
 Variables de entorno requeridas en Render:
 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `GROQ_API_KEY`, `GOOGLE_API_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `CORS_ORIGINS`, `ENVIRONMENT=production`.
-
----
-
-## Tests
-
-```bash
-pytest backend/tests/test_domain.py
-```
-
-Cubre: máquina de estados, value objects, normalización de palabras prohibidas, transiciones inválidas. Los tests de integración requieren credenciales completas y se ejecutan vs el deploy real.
-
----
-
-## Stack en una línea
-
-FastAPI · Next.js 14 · Supabase pgvector · Groq Llama 3.3 70B · Gemini 2.5 Flash · Gemini Embedding 001 · Langfuse · Render · Vercel · TypeScript · Tailwind
