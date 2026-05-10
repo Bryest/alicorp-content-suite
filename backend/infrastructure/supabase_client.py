@@ -49,6 +49,7 @@ class SupabaseBrandRepository(BrandRepository):
             "tone": manual.tone,
             "target_audience": manual.audience,
             "raw_manual": manual.raw_manual,
+            "forbidden_words": manual.forbidden_words,
             "version": manual.version,
         }
         self._client.table("brand_manuals").upsert(row).execute()
@@ -151,6 +152,7 @@ def _row_to_manual(r: dict) -> BrandManual:
         tone=r.get("tone") or "",
         audience=r.get("target_audience") or "",
         raw_manual=r.get("raw_manual") or "",
+        forbidden_words=list(r.get("forbidden_words") or []),
         version=int(r.get("version") or 1),
         created_at=_parse_dt(r.get("created_at")),
         updated_at=_parse_dt(r.get("updated_at")),

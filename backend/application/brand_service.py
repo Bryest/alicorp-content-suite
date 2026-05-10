@@ -69,15 +69,10 @@ class BrandService:
                 if s.value in sections_text:
                     sections_enum[s] = sections_text[s.value]
 
-            # FORBIDDEN section: ensure it explicitly lists the user-provided words
-            forbidden = ForbiddenWords.from_iterable(payload.get("forbidden_words"))
-            if forbidden:
-                listed = ", ".join(forbidden)
-                existing = sections_enum.get(BrandSection.FORBIDDEN, "")
-                if listed.lower() not in (existing or "").lower():
-                    sections_enum[BrandSection.FORBIDDEN] = (
-                        f"Never use: {listed}. " + (existing or "")
-                    ).strip()
+            # forbidden_words live as a structured domain field (single source of truth).
+            # The FORBIDDEN section text from Groq stays as descriptive prose for RAG context,
+            # but enforcement during generation uses `manual.forbidden_words` directly.
+            forbidden = list(ForbiddenWords.from_iterable(payload.get("forbidden_words")))
 
             raw_manual = "\n\n".join(
                 f"## {s.value}\n{sections_enum[s]}" for s in BrandSection.all() if s in sections_enum
@@ -91,6 +86,7 @@ class BrandService:
                 audience=payload.get("audience", ""),
                 raw_manual=raw_manual,
                 sections=sections_enum,
+                forbidden_words=forbidden,
             )
 
             # 3) Persist manual

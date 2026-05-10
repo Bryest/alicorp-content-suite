@@ -36,17 +36,21 @@ create table if not exists user_roles (
 
 -- ─── Brand manuals ───────────────────────────────────────────
 create table if not exists brand_manuals (
-  id              uuid primary key default uuid_generate_v4(),
-  user_id         uuid references auth.users(id),
-  name            text not null,
-  product_type    text,
-  target_audience text,
-  tone            text,
-  raw_manual      text,
-  version         integer default 1,
-  created_at      timestamptz default now(),
-  updated_at      timestamptz default now()
+  id               uuid primary key default uuid_generate_v4(),
+  user_id          uuid references auth.users(id),
+  name             text not null,
+  product_type     text,
+  target_audience  text,
+  tone             text,
+  raw_manual       text,
+  forbidden_words  text[] default '{}',
+  version          integer default 1,
+  created_at       timestamptz default now(),
+  updated_at       timestamptz default now()
 );
+
+-- For existing databases, run this migration once:
+--   alter table brand_manuals add column if not exists forbidden_words text[] default '{}';
 
 
 -- ─── Brand chunks (RAG vectors) ──────────────────────────────

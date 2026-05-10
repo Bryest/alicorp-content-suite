@@ -46,6 +46,7 @@ class BrandManual:
     audience: str
     raw_manual: str
     sections: dict[BrandSection, str] = field(default_factory=dict)
+    forbidden_words: list[str] = field(default_factory=list)
     user_id: Optional[UUID] = None
     id: UUID = field(default_factory=uuid4)
     version: int = 1
