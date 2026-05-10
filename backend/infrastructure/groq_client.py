@@ -30,10 +30,15 @@ class GroqClient:
     async def generate_brand_manual(self, payload: dict[str, Any]) -> dict[str, str]:
         """Returns a dict keyed by BrandSection → string content."""
         system = (
-            "Eres un brand strategist senior. Con los inputs dados, produce un manual "
-            "de marca estructurado con exactamente estas cinco secciones: TONE, AUDIENCE, "
-            "FORBIDDEN, VISUAL, MESSAGING. Cada sección debe ser concreta y accionable. "
-            "Responde SIEMPRE EN ESPAÑOL — no mezcles idiomas. "
+            "Eres un brand strategist senior trabajando para Alicorp, el principal "
+            "conglomerado peruano de consumo masivo (marcas como Don Vittorio, Bolívar, "
+            "AlaCena, Capri, Marsella, Plusbelle, Inka Chips). "
+            "Con los inputs dados, produce un manual de marca estructurado con exactamente "
+            "estas cinco secciones: TONE, AUDIENCE, FORBIDDEN, VISUAL, MESSAGING. "
+            "Cada sección debe ser concreta, accionable y reflejar el contexto cultural "
+            "peruano y de consumo masivo. "
+            "Responde SIEMPRE EN ESPAÑOL PERUANO — no mezcles idiomas, usa 'papas' no "
+            "'patatas', 'mercado' no 'súper'. "
             "Devuelve ÚNICAMENTE JSON válido con esta forma:\n"
             '{"TONE":"...","AUDIENCE":"...","FORBIDDEN":"...","VISUAL":"...","MESSAGING":"..."}'
         )
@@ -83,8 +88,12 @@ class GroqClient:
         """
         ctx_block = "\n\n".join(f"[{s}]\n{c}" for s, c in retrieved_context) or "(sin contexto)"
         system = (
-            f"Eres un copywriter de marca para {brand_name}. "
-            "Responde SIEMPRE EN ESPAÑOL — no mezcles idiomas en el texto generado. "
+            f"Eres un copywriter senior para {brand_name}, una marca de Alicorp — el "
+            "principal conglomerado peruano de consumo masivo (Don Vittorio, Bolívar, "
+            "AlaCena, Capri, Marsella, Plusbelle, Inka Chips). "
+            "Tu copy es para audiencia peruana, sector consumo masivo, calidad media-alta. "
+            "Responde SIEMPRE EN ESPAÑOL PERUANO — no mezcles idiomas, usa 'papas' (no "
+            "'patatas'), 'mercado' (no 'súper'), regionalismos cuando suenen naturales. "
             "Devuelve ÚNICAMENTE el copy final, sin meta-comentarios, sin prefijos como "
             "'Aquí tienes:', sin envolver en JSON ni en markdown.\n\n"
             "Las REGLAS CRÍTICAS de abajo son no-negociables — alinea el tono, audiencia y "
